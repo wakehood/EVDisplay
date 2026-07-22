@@ -15,7 +15,9 @@ struct CellsDashboardCardView: View {
         environmentManager ?? localPreviewSource
     }
     
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 6)
+    // Replace the old let columns definition with this responsive statement:
+    private let columns = Array(repeating: GridItem(.adaptive(minimum: 45), spacing: 6), count: 6)
+
     
     var body: some View {
         BaseDashboardCard(title: "Cells", themeColor: .orange) {

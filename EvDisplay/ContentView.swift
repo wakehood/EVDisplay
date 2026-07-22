@@ -8,34 +8,70 @@ struct ProportionalDashboardView: View {
     // TOGGLE HERE: Set to true for UI development, false for live vehicle connections
     @State private var connectionManager = OBD2ConnectionManager(isPreviewMock: true)
     
+    // Tracks the device's current width sizing category (compact = iPhone, regular = iPad)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    
     var body: some View {
         GeometryReader { geometry in
-            HStack(spacing: 16) {
-                EVDashboardCardView()
-                    .frame(width: (geometry.size.width - 16) * 0.66)
-                    .frame(maxHeight: .infinity)
+            let spacing: CGFloat = 16
+            let usableWidth = geometry.size.width - spacing
+            
+            // 1. DYNAMIC DISPATCH ENGINE: Check if device is compact (iPhone) or regular (iPad Landscape)
+            if horizontalSizeClass == .compact {
                 
-                VStack(spacing: 16) {
-                    ChargingHealthDashboardCardView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    CellsDashboardCardView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // --- iPHONE RESPONSIVE VERTICAL LAYOUT ---
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: spacing) {
+                        
+                        EVDashboardCardView()
+                            .frame(height: 320) // Enforce explicit structural frame tall heights on iPhone scrolling
+                        
+                        ChargingHealthDashboardCardView()
+                            .frame(height: 180)
+                        
+                        CellsDashboardCardView()
+                            .frame(height: 380) // Expanded slightly to provide space for your cell grids
+                        
+                    }
+                    .padding(spacing)
                 }
-                .frame(width: (geometry.size.width - 16) * 0.34)
-                .frame(maxHeight: .infinity)
+                .background(Color(.systemGroupedBackground))
+                
+            } else {
+                
+                // --- iPAD LANDSCAPE HORIZONTAL LAYOUT (Your original layout) ---
+                HStack(spacing: spacing) {
+                    EVDashboardCardView()
+                        .frame(width: usableWidth * 0.66)
+                        .frame(maxHeight: .infinity)
+                    
+                    VStack(spacing: spacing) {
+                        ChargingHealthDashboardCardView()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        CellsDashboardCardView()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                    .frame(width: usableWidth * 0.34)
+                    .frame(maxHeight: .infinity)
+                }
+                .padding(spacing)
+                .background(Color(.systemGroupedBackground))
+                
             }
         }
-        .padding(16)
-        .background(Color(.systemGroupedBackground))
         .environment(connectionManager) // Direct type safety injection
     }
 }
 
-#Preview {
+
+#Preview("iPad Pro Landscape Layout") {
     ProportionalDashboardView()
-    // Prevents child elements from crashing on layout resolution loops
-    .environment(OBD2ConnectionManager(isPreviewMock: true)) 
+        .environment(OBD2ConnectionManager(isPreviewMock: true))
 }
 
+#Preview("iPhone Diagnostic Layout") {
+    ProportionalDashboardView()
+        .environment(OBD2ConnectionManager(isPreviewMock: true))
+}
 
 
