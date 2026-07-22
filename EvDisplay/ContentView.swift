@@ -23,7 +23,7 @@ struct ProportionalDashboardView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: spacing) {
                         
-                        EVDashboardCardView()
+                        EVDashboardCard()
                             .frame(height: 320) // Enforce explicit structural frame tall heights on iPhone scrolling
                         
                         ChargingHealthDashboardCardView()
@@ -41,7 +41,7 @@ struct ProportionalDashboardView: View {
                 
                 // --- iPAD LANDSCAPE HORIZONTAL LAYOUT (Your original layout) ---
                 HStack(spacing: spacing) {
-                    EVDashboardCardView()
+                    EVDashboardCard()
                         .frame(width: usableWidth * 0.66)
                         .frame(maxHeight: .infinity)
                     

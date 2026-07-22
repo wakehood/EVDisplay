@@ -75,33 +75,50 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
             startMockDataStream()
         } else {
             // Put your actual CoreBluetooth initialization here:
-            // centralManager = CBCentralManager(delegate: self, queue: nil)
+            centralManager = CBCentralManager(delegate: self, queue: nil)
         }
     }
     // 3. Simple Mock Generator loop running safely on the MainActor
     func startMockDataStream() {
         self.speed = 65.0
-        self.rawSOCPercentage = 78 // Your correct initial value!
+        self.rawSOCPercentage = 78
         self.maxCellTemp = 35.0
         self.isConnected = true
+        
+        // 1. Establish your correct starting metrics configuration
+        self.rawPackVoltage = 147.0
+        self.rawPackCurrent = 16.8 // ~2.47 kW
+        
+        self.rawCellMin = 4.11
+        self.rawCellMax = 4.14
+        self.rawCellMean = 4.125
+        self.rawCellStdDev = 0.008
         
         mockTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             
             Task { @MainActor in
                 self.speed = max(0, min(120, self.speed + Double.random(in: -2...2)))
-                self.maxCellTemp = max(15, min(60, self.maxCellTemp + Double.random(in: -0.4...0.4)))
                 
-                if self.rawSOCPercentage > 1 {
-                    if Double.random(in: 0...1) > 0.7 {
-                        self.rawSOCPercentage -= 1
-                    }
-                } else {
-                    self.rawSOCPercentage = 78
+                // 2. Keep the metrics alive and fluctuating inside the active thread loop!
+                // This keeps your values from resetting back to zero on canvas redraws
+                self.rawPackVoltage = max(100.0, min(160.0, self.rawPackVoltage + Double.random(in: -0.5...0.5)))
+                self.rawPackCurrent = max(-100.0, min(150.0, self.rawPackCurrent + Double.random(in: -1.5...1.5)))
+                
+                // Cells logic stabilization
+                let variance = Double.random(in: -0.01...0.01)
+                self.rawCellMean = max(3.2, min(4.2, self.rawCellMean + variance))
+                self.rawCellMin = self.rawCellMean - Double.random(in: 0.01...0.03)
+                self.rawCellMax = self.rawCellMean + Double.random(in: 0.01...0.03)
+                self.rawCellStdDev = max(0.002, min(0.040, self.rawCellStdDev + Double.random(in: -0.001...0.001)))
+                
+                if self.rawSOCPercentage > 1 && Double.random(in: 0...1) > 0.7 {
+                    self.rawSOCPercentage -= 1
                 }
             }
         }
     }
+    
     @MainActor deinit {
         mockTimer?.invalidate()
     }
