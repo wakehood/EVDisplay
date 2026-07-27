@@ -35,7 +35,7 @@ struct ProportionalDashboardView: View {
                 HealthDashboardCardView()
                     .frame(height: 230)
                 CellsDashboardCardView()
-                    .frame(height: 380)
+                    .frame(height: 550)
             }
             .padding(sp)
 
@@ -83,10 +83,10 @@ struct ProportionalDashboardView: View {
         // Proportions fill iPad screens exactly; minimums ensure content fits on iPhone landscape.
         // Row 1 min 260: EVDashboardCard gauge is 160pt + ~40pt title = needs ~200pt, 60pt breathing room.
         // Row 2 min 220: HealthDashboardCardView 7-item grid needs ~204pt minimum.
-        // Row 3 min 280: CellsDashboardCardView grid fits comfortably.
+        // Row 3 min 360: 9-col iPad grid is ~272pt, 6-col iPhone landscape grid is ~348pt.
         let row1H = max(totalH * 0.35, 260)
         let row2H = max(totalH * 0.28, 220)
-        let row3H = max(totalH * 0.37, 280)
+        let row3H = max(totalH * 0.37, 360)
         // Usable width after left/right padding (sp each) + 1 inter-column gap (sp)
         let evColW = (geometry.size.width - sp * 3) * 0.58
 
@@ -94,26 +94,26 @@ struct ProportionalDashboardView: View {
             VStack(spacing: sp) {
                 HStack(spacing: sp) {
                     EVDashboardCard()
-                        .frame(width: evColW, height: row1H)
+                        .frame(width: evColW, height: row1H, alignment: .top)
                         .clipped()
                     GeneralDashboardCardView()
                         .frame(maxWidth: .infinity)
-                        .frame(height: row1H)
+                        .frame(height: row1H, alignment: .top)
                         .clipped()
                 }
                 HStack(spacing: sp) {
                     ChargingDashboardCardView()
                         .frame(maxWidth: .infinity)
-                        .frame(height: row2H)
+                        .frame(height: row2H, alignment: .top)
                         .clipped()
                     HealthDashboardCardView()
                         .frame(maxWidth: .infinity)
-                        .frame(height: row2H)
+                        .frame(height: row2H, alignment: .top)
                         .clipped()
                 }
                 CellsDashboardCardView()
                     .frame(maxWidth: .infinity)
-                    .frame(height: row3H)
+                    .frame(height: row3H, alignment: .top)
                     .clipped()
             }
             .padding(sp)

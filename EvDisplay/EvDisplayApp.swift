@@ -1,17 +1,26 @@
-//
-//  EvDisplayApp.swift
-//  EvDisplay
-//
-//  Created by Sylvia Wake-Hood on 7/15/26.
-//
-
 import SwiftUI
 
 @main
 struct EvDisplayApp: App {
+    @State private var showLaunchScreen = true
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ZStack {
+                ContentView()
+                if showLaunchScreen {
+                    LaunchScreenView()
+                        .transition(.opacity)
+                        .zIndex(1)
+                }
+            }
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
+                    withAnimation(.easeOut(duration: 0.7)) {
+                        showLaunchScreen = false
+                    }
+                }
+            }
         }
     }
 }

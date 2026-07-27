@@ -9,9 +9,6 @@ import Foundation
 
 @Observable
 class VehicleTelemetry: NSObject {
-    var speed: Double = 0.0
-//    var stateOfCharge: Double = 0.0
-    var maxCellTemp: Double = 0.0
     var isConnected: Bool = false
         
     var mcuRunTime = "--:--:--"
@@ -33,6 +30,8 @@ class VehicleTelemetry: NSObject {
     var rawCellMax = 0.0
     var rawCellMean = 0.0
     var rawCellStdDev = 0.0
+    
+    var rawCellTemp = 0.0
     
     // FIX: Separated single-line comma declarations to satisfy the Observation macro criteria
     var alertHardware   = 0

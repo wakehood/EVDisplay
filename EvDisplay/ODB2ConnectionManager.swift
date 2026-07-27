@@ -15,8 +15,6 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
     var isScanning = false
     var receivedLogs: [String] = []
     
-    var speed: Double = 0.0
-    var maxCellTemp: Double = 0.0
     var isConnected: Bool = false
     var isChargingAllowed: Bool = false
     var isChargePlugConnected: Bool = false
@@ -41,6 +39,8 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
     var rawCellMax = 0.0
     var rawCellMean = 0.0
     var rawCellStdDev = 0.0
+    
+    var rawCellTemp = 25.0 //temporary
     
     // FIX: Separated single-line comma declarations to satisfy the Observation macro criteria
     var alertHardware = 0
@@ -82,9 +82,7 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
     }
     // 3. Simple Mock Generator loop running safely on the MainActor
     func startMockDataStream() {
-        self.speed = 65.0
         self.rawSOCPercentage = 78
-        self.maxCellTemp = 35.0
         self.isConnected = true
         self.isChargingAllowed = true
         self.isChargePlugConnected = true
@@ -98,12 +96,13 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
         self.rawCellMean = 4.125
         self.rawCellStdDev = 0.008
         
+        self.rawCellTemp = 30.0
+        
         mockTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             
             Task { @MainActor in
-                self.speed = max(0, min(120, self.speed + Double.random(in: -2...2)))
-                
+               
                 // 2. Keep the metrics alive and fluctuating inside the active thread loop!
                 // This keeps your values from resetting back to zero on canvas redraws
                 self.rawPackVoltage = max(100.0, min(160.0, self.rawPackVoltage + Double.random(in: -0.5...0.5)))

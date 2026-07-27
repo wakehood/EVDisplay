@@ -15,8 +15,39 @@ struct CellsDashboardCardView: View {
         environmentManager ?? localPreviewSource
     }
     
-    // Replace the old let columns definition with this responsive statement:
-    private let columns = Array(repeating: GridItem(.adaptive(minimum: 45), spacing: 6), count: 6)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    // iPad (regular width): 9 cols → 2 rows per module, cells ~63pt tall.
+    // iPhone landscape/portrait (compact width): 6 cols → 3 rows per module, cells ~57pt tall.
+    // Portrait stacks modules vertically so each uses full width; landscape puts them side by side.
+    private var columns: [GridItem] {
+        let count = horizontalSizeClass == .regular ? 9 : 6
+        return Array(repeating: GridItem(.flexible(minimum: 28), spacing: 4), count: count)
+    }
+
+    private var isPortrait: Bool {
+        horizontalSizeClass == .compact && verticalSizeClass == .regular
+    }
+
+    @ViewBuilder
+    private func moduleGrid(title: String, range: ClosedRange<Int>) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(.secondary)
+            LazyVGrid(columns: columns, spacing: 6) {
+                ForEach(range, id: \.self) { index in
+                    CellBlockView(
+                        index: index,
+                        minV: manager.rawCellMin,
+                        maxV: manager.rawCellMax,
+                        temperature: manager.rawCellTemp
+                    )
+                }
+            }
+        }
+    }
 
     
     var body: some View {
@@ -50,46 +81,23 @@ struct CellsDashboardCardView: View {
                 .cornerRadius(8)
                 .padding(.horizontal)
                 
-                HStack(spacing: 12) {
-                    MiniStatView(label: "MAX TEMP", value: String(format: "%.0f°C", manager.maxCellTemp))
-                    Spacer()
-                    TemperatureLegendItem(label: "Normal", color: .green)
-                    TemperatureLegendItem(label: "Warm", color: .orange)
-                    TemperatureLegendItem(label: "Hot", color: .red)
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-                .background(Color.primary.opacity(0.03))
-                .cornerRadius(8)
-                .padding(.horizontal)
                 
                 // 2. Two 18-cell module grids
-                HStack(spacing: 20) {
-                    // --- MODULE A ---
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Module A")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.secondary)
-                        LazyVGrid(columns: columns, spacing: 6) {
-                            ForEach(1...18, id: \.self) { index in
-                                CellBlockView(index: index, minV: manager.rawCellMin, maxV: manager.rawCellMax, temperature: manager.maxCellTemp)
-                            }
-                        }
+                // Portrait: stacked vertically (side-by-side would overflow the screen width).
+                // Landscape/iPad: side by side.
+                if isPortrait {
+                    VStack(spacing: 12) {
+                        moduleGrid(title: "Module A", range: 1...18)
+                        moduleGrid(title: "Module B", range: 19...36)
                     }
-                    
-                    // --- MODULE B ---
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Module B")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.secondary)
-                        LazyVGrid(columns: columns, spacing: 6) {
-                            ForEach(19...36, id: \.self) { index in
-                                CellBlockView(index: index, minV: manager.rawCellMin, maxV: manager.rawCellMax, temperature: manager.maxCellTemp)
-                            }
-                        }
+                    .padding(.horizontal)
+                } else {
+                    HStack(spacing: 20) {
+                        moduleGrid(title: "Module A", range: 1...18)
+                        moduleGrid(title: "Module B", range: 19...36)
                     }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
             }
             .padding(.vertical, 6)
         }
