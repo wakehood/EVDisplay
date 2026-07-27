@@ -34,16 +34,17 @@ struct BaseDashboardCard<Content: View>: View {
                     .fontWeight(.bold)
                     .foregroundColor(themeColor)
                     .padding([.top, .leading])
-                
-                Spacer()
-                
+
+                Spacer(minLength: 0)
+
                 // Injects the card's specific UI
                 content
                     .frame(maxWidth: .infinity)
-                
-                Spacer()
+
+                Spacer(minLength: 0)
             }
         }
+        .clipped()
     }
 }
 

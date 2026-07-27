@@ -9,7 +9,7 @@ import SwiftUI
 
 struct CellsDashboardCardView: View {
     @Environment(OBD2ConnectionManager.self) private var environmentManager: OBD2ConnectionManager?
-    @State private var localPreviewSource = OBD2ConnectionManager(isPreviewMock: true)
+    @State private var localPreviewSource = OBD2ConnectionManager(isPreviewMock: false)
     
     private var manager: OBD2ConnectionManager {
         environmentManager ?? localPreviewSource
@@ -50,6 +50,19 @@ struct CellsDashboardCardView: View {
                 .cornerRadius(8)
                 .padding(.horizontal)
                 
+                HStack(spacing: 12) {
+                    MiniStatView(label: "MAX TEMP", value: String(format: "%.0f°C", manager.maxCellTemp))
+                    Spacer()
+                    TemperatureLegendItem(label: "Normal", color: .green)
+                    TemperatureLegendItem(label: "Warm", color: .orange)
+                    TemperatureLegendItem(label: "Hot", color: .red)
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .background(Color.primary.opacity(0.03))
+                .cornerRadius(8)
+                .padding(.horizontal)
+                
                 // 2. Two 18-cell module grids
                 HStack(spacing: 20) {
                     // --- MODULE A ---
@@ -59,7 +72,7 @@ struct CellsDashboardCardView: View {
                             .foregroundColor(.secondary)
                         LazyVGrid(columns: columns, spacing: 6) {
                             ForEach(1...18, id: \.self) { index in
-                                CellBlockView(index: index, minV: manager.rawCellMin, maxV: manager.rawCellMax)
+                                CellBlockView(index: index, minV: manager.rawCellMin, maxV: manager.rawCellMax, temperature: manager.maxCellTemp)
                             }
                         }
                     }
@@ -71,7 +84,7 @@ struct CellsDashboardCardView: View {
                             .foregroundColor(.secondary)
                         LazyVGrid(columns: columns, spacing: 6) {
                             ForEach(19...36, id: \.self) { index in
-                                CellBlockView(index: index, minV: manager.rawCellMin, maxV: manager.rawCellMax)
+                                CellBlockView(index: index, minV: manager.rawCellMin, maxV: manager.rawCellMax, temperature: manager.maxCellTemp)
                             }
                         }
                     }
@@ -101,32 +114,65 @@ struct MiniStatView: View {
     }
 }
 
+// MARK: - Temperature Legend Component
+struct TemperatureLegendItem: View {
+    let label: String
+    let color: Color
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(color)
+                .frame(width: 7, height: 7)
+            Text(label)
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundColor(.secondary)
+        }
+    }
+}
+
 // MARK: - Voltage Cell Component
 struct CellBlockView: View {
     let index: Int
     let minV: Double
     let maxV: Double
+    let temperature: Double
+    
+    private var temperatureColor: Color {
+        switch temperature {
+        case 50...:
+            .red
+        case 40..<50:
+            .orange
+        default:
+            .green
+        }
+    }
     
     var body: some View {
         let simulatedCellVoltage = minV + (abs(sin(Double(index))) * (maxV - minV))
         
         ZStack {
             RoundedRectangle(cornerRadius: 4)
-                .fill(Color.green.opacity(0.12))
+                .fill(temperatureColor.opacity(0.12))
                 .overlay(
                     RoundedRectangle(cornerRadius: 4)
-                        .stroke(Color.green.opacity(0.8), lineWidth: 1.5)
+                        .stroke(temperatureColor.opacity(0.8), lineWidth: 1.5)
                 )
-                .aspectRatio(1.2, contentMode: .fit)
+                .aspectRatio(0.95, contentMode: .fit)
             
             VStack(spacing: 1) {
                 Text("\(index)")
                     .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .foregroundColor(.green)
+                    .foregroundColor(temperatureColor)
                 
                 Text(String(format: "%.2fV", simulatedCellVoltage))
                     .font(.system(size: 8, weight: .black, design: .monospaced))
                     .foregroundColor(.primary)
+                
+                Text(String(format: "%.0f°C", temperature))
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundColor(temperatureColor)
             }
         }
     }

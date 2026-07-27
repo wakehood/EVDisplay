@@ -8,7 +8,7 @@ import SwiftUI
 
 struct EVDashboardCard: View {
     @Environment(OBD2ConnectionManager.self) private var environmentManager: OBD2ConnectionManager?
-    @State private var localPreviewSource = OBD2ConnectionManager(isPreviewMock: true)
+    @State private var localPreviewSource = OBD2ConnectionManager(isPreviewMock: false)
     
     private var manager: OBD2ConnectionManager {
         environmentManager ?? localPreviewSource
@@ -26,12 +26,13 @@ struct EVDashboardCard: View {
         let normalizedPowerProgress = calculateLogProgress(for: abs(powerKW))
         
         BaseDashboardCard(title: "EV", themeColor: .blue) {
-            VStack(spacing: 16) {
-                
-                // Main Upper Interface: Places the Semicircle Gauge and Vertical Power Track side-by-side
-                HStack(alignment: .center, spacing: 24) {
+            HStack(alignment: .center, spacing: 18) {
+                VStack(spacing: 12) {
+                    Text("State of Charge")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    // Left Side: Semicircle State of Charge Gauge
                     Gauge(value: Double(manager.rawSOCPercentage), in: 0...100) {
                         Text("Charge")
                     } currentValueLabel: {
@@ -39,77 +40,80 @@ struct EVDashboardCard: View {
                     }
                     .gaugeStyle(AdaptiveSemicircleSoCStyle())
                     .animation(.spring(response: 0.4, dampingFraction: 0.75), value: manager.rawSOCPercentage)
-                    .frame(width: 170, height: 170)
-                    .padding(.leading, 8)
+                    .frame(width: 160, height: 160)
                     
-                    // Right Side: Custom Vertical Logarithmic Power Gauge Panel
-                    HStack(spacing: 8) {
-                        
-                        // 1. The Custom Vertical Progress Track (Fills from bottom to top)
-                        GeometryReader { geo in
-                            ZStack(alignment: .bottom) {
-                                // Track Background
-                                Capsule()
-                                    .fill(Color.primary.opacity(0.06))
-                                    .frame(width: 14)
-                                
-                                // Live Color Filled Progress Height
-                                Capsule()
-                                    .fill(displayColor)
-                                    .frame(width: 14, height: geo.size.height * normalizedPowerProgress)
-                                    .shadow(color: displayColor.opacity(0.15), radius: 4)
-                                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: normalizedPowerProgress)
-                            }
-                            .frame(maxWidth: 14)
-                        }
-                        .frame(width: 14, height: 180) // Locks explicit vertical tall dimensions
-                        
-                        // 2. Vertical Logarithmic Axis Scale Ticks & Numbers Layout
-                        VStack(alignment: .leading, spacing: 0) {
-                            // Loop backward (.reversed()) so 500 stays at the top and 0 sits at the bottom
-                            ForEach(scaleThresholds.reversed(), id: \.self) { threshold in
-                                Text("\(Int(threshold))")
-                                    .font(.system(size: 8, weight: .bold, design: .monospaced))
-                                    .foregroundColor(.secondary)
-                                    // Space the label blocks perfectly across the height parameters
-                                    .frame(maxHeight: .infinity, alignment: threshold == scaleThresholds.last ? .top : (threshold == scaleThresholds.first ? .bottom : .center))
-                            }
-                        }
-                        .frame(height: 180)
-                    }
+                    Spacer(minLength: 0)
                 }
-                .padding(.horizontal)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 
-                // Lower Interface Segment: Digital Telemetry Text Readouts
-                VStack(spacing: 4) {
-                    HStack {
-                        Text(isCharging ? "REGEN / CHARGE" : "POWER DEMAND")
-                            .font(.system(size: 9, weight: .bold))
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Power")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
                             .foregroundColor(.secondary)
-                            .tracking(0.5)
                         
                         Spacer()
                         
-                        Text(String(format: "%.2f kW", abs(powerKW)))
-                            .font(.system(.body, design: .monospaced))
-                            .fontWeight(.black)
+                        Text(isCharging ? "CHARGE" : "DEMAND")
+                            .font(.system(size: 9, weight: .bold))
                             .foregroundColor(displayColor)
+                            .tracking(0.5)
                     }
                     
-                    Divider()
-                        .padding(.vertical, 2)
-                    
-                    HStack {
-                        Text(String(format: "Pack: %.1fV", manager.rawPackVoltage))
-                        Spacer()
-                        Text(String(format: "Current: %.1fA", manager.rawPackCurrent))
+                    HStack(alignment: .center, spacing: 12) {
+                        HStack(spacing: 8) {
+                            GeometryReader { geo in
+                                ZStack(alignment: .bottom) {
+                                    Capsule()
+                                        .fill(Color.primary.opacity(0.06))
+                                        .frame(width: 14)
+                                    
+                                    Capsule()
+                                        .fill(displayColor)
+                                        .frame(width: 14, height: geo.size.height * normalizedPowerProgress)
+                                        .shadow(color: displayColor.opacity(0.15), radius: 4)
+                                        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: normalizedPowerProgress)
+                                }
+                                .frame(maxWidth: 14)
+                            }
+                            .frame(width: 14, height: 145)
+                            
+                            VStack(alignment: .leading, spacing: 0) {
+                                ForEach(scaleThresholds.reversed(), id: \.self) { threshold in
+                                    Text("\(Int(threshold))")
+                                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                        .foregroundColor(.secondary)
+                                        .frame(maxHeight: .infinity, alignment: threshold == scaleThresholds.last ? .top : (threshold == scaleThresholds.first ? .bottom : .center))
+                                }
+                            }
+                            .frame(height: 145)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(String(format: "%.2f kW", abs(powerKW)))
+                                .font(.system(.title3, design: .monospaced))
+                                .fontWeight(.black)
+                                .foregroundColor(displayColor)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+                            
+                            Divider()
+                            
+                            Text(String(format: "Pack %.1fV", manager.rawPackVoltage))
+                            Text(String(format: "Current %.1fA", manager.rawPackCurrent))
+                        }
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundColor(.secondary)
                     }
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundColor(.secondary)
+                    
+                    Spacer(minLength: 0)
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 8)
         }
     }
     

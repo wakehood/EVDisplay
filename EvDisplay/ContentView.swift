@@ -5,73 +5,130 @@ struct ContentView: View {
 }
 
 struct ProportionalDashboardView: View {
-    // TOGGLE HERE: Set to true for UI development, false for live vehicle connections
-    @State private var connectionManager = OBD2ConnectionManager(isPreviewMock: true)
-    
-    // Tracks the device's current width sizing category (compact = iPhone, regular = iPad)
+    @State private var connectionManager = OBD2ConnectionManager(isPreviewMock: false)
+
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
     var body: some View {
         GeometryReader { geometry in
-            let spacing: CGFloat = 16
-            let usableWidth = geometry.size.width - spacing
-            
-            // 1. DYNAMIC DISPATCH ENGINE: Check if device is compact (iPhone) or regular (iPad Landscape)
-            if horizontalSizeClass == .compact {
-                
-                // --- iPHONE RESPONSIVE VERTICAL LAYOUT ---
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: spacing) {
-                        
-                        EVDashboardCard()
-                            .frame(height: 320) // Enforce explicit structural frame tall heights on iPhone scrolling
-                        
-                        ChargingHealthDashboardCardView()
-                            .frame(height: 180)
-                        
-                        CellsDashboardCardView()
-                            .frame(height: 380) // Expanded slightly to provide space for your cell grids
-                        
-                    }
-                    .padding(spacing)
-                }
-                .background(Color(.systemGroupedBackground))
-                
+            if horizontalSizeClass == .compact && verticalSizeClass == .regular {
+                iPhonePortraitLayout(geometry: geometry)
             } else {
-                
-                // --- iPAD LANDSCAPE HORIZONTAL LAYOUT (Your original layout) ---
-                HStack(spacing: spacing) {
-                    EVDashboardCard()
-                        .frame(width: usableWidth * 0.66)
-                        .frame(maxHeight: .infinity)
-                    
-                    VStack(spacing: spacing) {
-                        ChargingHealthDashboardCardView()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        CellsDashboardCardView()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
-                    .frame(width: usableWidth * 0.34)
-                    .frame(maxHeight: .infinity)
-                }
-                .padding(spacing)
-                .background(Color(.systemGroupedBackground))
-                
+                gridLayout(geometry: geometry)
             }
         }
-        .environment(connectionManager) // Direct type safety injection
+        .environment(connectionManager)
+    }
+
+    // MARK: - iPhone Portrait: single-column vertical scroll
+    private func iPhonePortraitLayout(geometry: GeometryProxy) -> some View {
+        let sp: CGFloat = 16
+        return ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: sp) {
+                GeneralDashboardCardView()
+                    .frame(height: 150)
+                EVDashboardCard()
+                    .frame(height: 320)
+                ChargingDashboardCardView()
+                    .frame(height: 180)
+                HealthDashboardCardView()
+                    .frame(height: 230)
+                CellsDashboardCardView()
+                    .frame(height: 380)
+            }
+            .padding(sp)
+
+            // Bus console log
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Bus Active Line Traces").font(.caption2).foregroundColor(.secondary)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(0..<connectionManager.receivedLogs.count, id: \.self) { index in
+                                Text(connectionManager.receivedLogs[index])
+                                    .font(.system(.caption2, design: .monospaced))
+                                    .foregroundColor(.green)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .id(index)
+                            }
+                        }
+                        .padding(6)
+                    }
+                    .frame(height: 80)
+                    .background(Color.black)
+                    .cornerRadius(6)
+                    .onChange(of: connectionManager.receivedLogs.count) { _, newValue in
+                        if newValue > 0 { withAnimation { proxy.scrollTo(newValue - 1) } }
+                    }
+                }
+            }
+        }
+        .background(Color(.systemGroupedBackground))
+    }
+
+    // MARK: - iPad + iPhone Landscape: 3-row 2-column grid
+    //
+    // Row 1: EV (58%) | General (42%)
+    // Row 2: Charging (50%) | Health (50%)
+    // Row 3: Cells (full width)
+    //
+    // Heights are proportional to screen height on iPad (fills screen without scrolling).
+    // On iPhone landscape the proportional heights are shorter than the minimums, so the
+    // ScrollView kicks in to let the user scroll through all panels.
+    private func gridLayout(geometry: GeometryProxy) -> some View {
+        let sp: CGFloat = 12
+        // Usable height after top/bottom padding (sp each) + 2 inter-row gaps (sp each)
+        let totalH = geometry.size.height - sp * 4
+        // Proportions fill iPad screens exactly; minimums ensure content fits on iPhone landscape.
+        // Row 1 min 260: EVDashboardCard gauge is 160pt + ~40pt title = needs ~200pt, 60pt breathing room.
+        // Row 2 min 220: HealthDashboardCardView 7-item grid needs ~204pt minimum.
+        // Row 3 min 280: CellsDashboardCardView grid fits comfortably.
+        let row1H = max(totalH * 0.35, 260)
+        let row2H = max(totalH * 0.28, 220)
+        let row3H = max(totalH * 0.37, 280)
+        // Usable width after left/right padding (sp each) + 1 inter-column gap (sp)
+        let evColW = (geometry.size.width - sp * 3) * 0.58
+
+        return ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: sp) {
+                HStack(spacing: sp) {
+                    EVDashboardCard()
+                        .frame(width: evColW, height: row1H)
+                        .clipped()
+                    GeneralDashboardCardView()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: row1H)
+                        .clipped()
+                }
+                HStack(spacing: sp) {
+                    ChargingDashboardCardView()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: row2H)
+                        .clipped()
+                    HealthDashboardCardView()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: row2H)
+                        .clipped()
+                }
+                CellsDashboardCardView()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: row3H)
+                    .clipped()
+            }
+            .padding(sp)
+        }
+        .background(Color(.systemGroupedBackground))
     }
 }
 
 
-#Preview("iPad Pro Landscape Layout") {
+#Preview("iPad Grid Layout") {
     ProportionalDashboardView()
         .environment(OBD2ConnectionManager(isPreviewMock: true))
 }
 
-#Preview("iPhone Diagnostic Layout") {
+#Preview("iPhone Portrait Layout") {
     ProportionalDashboardView()
         .environment(OBD2ConnectionManager(isPreviewMock: true))
 }
-
-

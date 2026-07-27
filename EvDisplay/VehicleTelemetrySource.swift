@@ -35,13 +35,13 @@ class VehicleTelemetry: NSObject {
     var rawCellStdDev = 0.0
     
     // FIX: Separated single-line comma declarations to satisfy the Observation macro criteria
-    var alertHardware = 0
-    var alertCCensus = 0
-    var alertTCensus = 0
-    var alertHVC = 0
-    var alertLVC = 0
-    var alertHiTemp = 0
-    var alertLoTemp = 0
+    var alertHardware   = 0
+    var alertCCensus    = 0
+    var alertTCensus    = 0
+    var alertHVC        = 0
+    var alertLVC        = 0
+    var alertHiTemp     = 0
+    var alertLoTemp     = 0
 
 }
 

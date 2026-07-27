@@ -18,6 +18,8 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
     var speed: Double = 0.0
     var maxCellTemp: Double = 0.0
     var isConnected: Bool = false
+    var isChargingAllowed: Bool = false
+    var isChargePlugConnected: Bool = false
     private var mockTimer: Timer?
     
     var mcuRunTime = "--:--:--"
@@ -84,6 +86,8 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
         self.rawSOCPercentage = 78
         self.maxCellTemp = 35.0
         self.isConnected = true
+        self.isChargingAllowed = true
+        self.isChargePlugConnected = true
         
         // 1. Establish your correct starting metrics configuration
         self.rawPackVoltage = 147.0
@@ -123,7 +127,16 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
         mockTimer?.invalidate()
     }
     
-    func startScanning() { guard centralManager.state == .poweredOn else { return }; isScanning = true; connectionStatus = "Scanning..."; centralManager.scanForPeripherals(withServices: [serialServiceUUID], options: nil) }
+    func startScanning() {
+        guard centralManager.state == .poweredOn
+        else {
+            return
+        }
+        isScanning = true;
+        connectionStatus = "Scanning..."
+        centralManager.scanForPeripherals(withServices: [serialServiceUUID], options: nil)
+    }
+    
     func disconnect() { if let p = obdPeripheral { centralManager.cancelPeripheralConnection(p) } }
     
     func sendCommand(_ command: String) {
@@ -154,7 +167,7 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
     
     func startAutomaticPolling() {
         stopAutomaticPolling(); masterTickCounter = 0; cellCycleCounter = 0
-        pollingTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: 0.50, repeats: true) { [weak self] _ in
             guard let self = self, self.connectionStatus == "Connected" else { return }
             switch self.masterTickCounter {
             case 0: self.sendCommand("22 DD 83")
@@ -175,7 +188,18 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
     }
     
     func stopAutomaticPolling() { pollingTimer?.invalidate(); pollingTimer = nil }
-    func centralManagerDidUpdateState(_ c: CBCentralManager) { DispatchQueue.main.async { if c.state == .poweredOn { self.startScanning() } else { self.connectionStatus = "Bluetooth Off"; self.isScanning = false } } }
+    
+    func centralManagerDidUpdateState(_ c: CBCentralManager) {
+        DispatchQueue.main.async {
+            if c.state == .poweredOn {
+                self.startScanning()
+            }
+            else {
+                self.connectionStatus = "Bluetooth Off";
+                self.isScanning = false
+            }
+        }
+    }
     func centralManager(_ c: CBCentralManager, didDiscover p: CBPeripheral, advertisementData: [String : Any], rssi: NSNumber) { centralManager.stopScan(); obdPeripheral = p; p.delegate = self; DispatchQueue.main.async { self.isScanning = false; self.connectionStatus = "Connecting..." }; centralManager.connect(p, options: nil) }
     func centralManager(_ c: CBCentralManager, didConnect p: CBPeripheral) { DispatchQueue.main.async { self.connectionStatus = "Connected" }; p.discoverServices([serialServiceUUID]) }
     func centralManager(_ c: CBCentralManager, didDisconnectPeripheral p: CBPeripheral, error: Error?) { stopAutomaticPolling(); currentInitStep = 0; DispatchQueue.main.async { self.connectionStatus = "Disconnected"; self.obdPeripheral = nil; self.txCharacteristic = nil; self.rxCharacteristic = nil; self.startScanning() }; logMessage("Re-scanning...") }
