@@ -117,6 +117,30 @@ struct ProportionalDashboardView: View {
                     .clipped()
             }
             .padding(sp)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Bus Active Line Traces").font(.caption2).foregroundColor(.secondary)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(0..<connectionManager.receivedLogs.count, id: \.self) { index in
+                                Text(connectionManager.receivedLogs[index])
+                                    .font(.system(.caption2, design: .monospaced))
+                                    .foregroundColor(.green)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .id(index)
+                            }
+                        }
+                        .padding(6)
+                    }
+                    .frame(height: 80)
+                    .background(Color.black)
+                    .cornerRadius(6)
+                    .onChange(of: connectionManager.receivedLogs.count) { _, newValue in
+                        if newValue > 0 { withAnimation { proxy.scrollTo(newValue - 1) } }
+                    }
+                }
+            }
         }
         .background(Color(.systemGroupedBackground))
     }

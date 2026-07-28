@@ -60,6 +60,11 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
     private var currentInitStep = 0
     private var masterTickCounter = 0
     private var cellCycleCounter = 0
+    // Response gating: prevents sending the next command before the adapter finishes the current one.
+    // Without this, a 0.5s timer can fire while the ECU is still responding, causing the adapter
+    // to interrupt its CAN bus search and respond with "STOPPED" instead of data.
+    private var waitingForResponse = false
+    private var responseTimeoutTask: DispatchWorkItem?
     
     private let serialServiceUUID = CBUUID(string: "FFF0")
     private let writeCharacteristicUUID = CBUUID(string: "FFF1")
@@ -143,6 +148,11 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
         if let data = (command + "\r").data(using: .utf8) {
             p.writeValue(data, for: ch, type: ch.properties.contains(.writeWithoutResponse) ? .withoutResponse : .withResponse)
             logMessage("Sent: \(command)")
+            waitingForResponse = true
+            responseTimeoutTask?.cancel()
+            let task = DispatchWorkItem { [weak self] in self?.waitingForResponse = false }
+            responseTimeoutTask = task
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: task)
         }
     }
     
@@ -150,15 +160,24 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
     
     private func advanceHandshake() {
         currentInitStep += 1
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+        // AT Z needs ~1s for the chip to fully reset before accepting the next command.
+        // A brief pause before polling starts lets the adapter settle after the version query.
+        let delay: TimeInterval
+        switch currentInitStep {
+        case 1: delay = 1.5
+        case 8: delay = 0.5
+        default: delay = 0.4
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             switch self.currentInitStep {
             case 1: self.sendCommand("AT Z")
             case 2: self.sendCommand("AT E0")
             case 3: self.sendCommand("AT H1")
-            case 4: self.sendCommand("AT SP 6")
-            case 5: self.sendCommand("AT SH 7DF")
-            case 6: self.sendCommand("22 DD 80")
-            case 7: self.startAutomaticPolling()
+            case 4: self.sendCommand("AT ST FF")  // maximum bus-search timeout (~1s)
+            case 5: self.sendCommand("AT SP 6")
+            case 6: self.sendCommand("AT SH 7DF")
+            case 7: self.sendCommand("22 DD 80")
+            case 8: self.startAutomaticPolling()
             default: break
             }
         }
@@ -166,8 +185,11 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
     
     func startAutomaticPolling() {
         stopAutomaticPolling(); masterTickCounter = 0; cellCycleCounter = 0
-        pollingTimer = Timer.scheduledTimer(withTimeInterval: 0.50, repeats: true) { [weak self] _ in
-            guard let self = self, self.connectionStatus == "Connected" else { return }
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: 0.80, repeats: true) { [weak self] _ in
+            // Skip this tick if we're still waiting for the previous response.
+            // masterTickCounter is only advanced when a command is actually sent, so the
+            // same command will be retried on the next tick after the response arrives.
+            guard let self = self, self.connectionStatus == "Connected", !self.waitingForResponse else { return }
             switch self.masterTickCounter {
             case 0: self.sendCommand("22 DD 83")
             case 1: self.sendCommand("22 DD 84")
@@ -201,7 +223,7 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
     }
     func centralManager(_ c: CBCentralManager, didDiscover p: CBPeripheral, advertisementData: [String : Any], rssi: NSNumber) { centralManager.stopScan(); obdPeripheral = p; p.delegate = self; DispatchQueue.main.async { self.isScanning = false; self.connectionStatus = "Connecting..." }; centralManager.connect(p, options: nil) }
     func centralManager(_ c: CBCentralManager, didConnect p: CBPeripheral) { DispatchQueue.main.async { self.connectionStatus = "Connected" }; p.discoverServices([serialServiceUUID]) }
-    func centralManager(_ c: CBCentralManager, didDisconnectPeripheral p: CBPeripheral, error: Error?) { stopAutomaticPolling(); currentInitStep = 0; DispatchQueue.main.async { self.connectionStatus = "Disconnected"; self.obdPeripheral = nil; self.txCharacteristic = nil; self.rxCharacteristic = nil; self.startScanning() }; logMessage("Re-scanning...") }
+    func centralManager(_ c: CBCentralManager, didDisconnectPeripheral p: CBPeripheral, error: Error?) { stopAutomaticPolling(); currentInitStep = 0; waitingForResponse = false; responseTimeoutTask?.cancel(); DispatchQueue.main.async { self.connectionStatus = "Disconnected"; self.obdPeripheral = nil; self.txCharacteristic = nil; self.rxCharacteristic = nil; self.startScanning() }; logMessage("Re-scanning...") }
     func peripheral(_ p: CBPeripheral, didDiscoverServices error: Error?) { if let services = p.services { for s in services where s.uuid == serialServiceUUID { p.discoverCharacteristics([writeCharacteristicUUID, notifyCharacteristicUUID], for: s) } } }
     
     func peripheral(_ p: CBPeripheral, didDiscoverCharacteristicsFor s: CBService, error: Error?) {
@@ -216,15 +238,30 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
     func peripheral(_ p: CBPeripheral, didUpdateValueFor ch: CBCharacteristic, error: Error?) {
         guard ch.uuid == rxCharacteristic?.uuid, let data = ch.value, let fragment = String(data: data, encoding: .utf8) else { return }
         incomingBuffer += fragment
-        if incomingBuffer.contains(">") || incomingBuffer.contains("\r") {
-            let res = incomingBuffer.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-            incomingBuffer = ""
-            if !res.isEmpty {
-                logMessage("Received: \(res)")
-                if currentInitStep < 7 && (res.contains("OK") || res.contains("ELM327")) { advanceHandshake(); return }
-                parseCANResponse(res.replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "\r", with: "").replacingOccurrences(of: "\n", with: ""))
-            }
+        // The ELM327 always terminates a complete response with ">". Waiting for ">" instead
+        // of any "\r" ensures we don't process partial multi-line responses prematurely.
+        guard incomingBuffer.contains(">") else { return }
+        let res = incomingBuffer.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        incomingBuffer = ""
+        guard !res.isEmpty else { return }
+
+        // Response received — clear the gate and cancel the safety timeout.
+        waitingForResponse = false
+        responseTimeoutTask?.cancel()
+
+        logMessage("Received: \(res)")
+
+        // "STOPPED" means the adapter interrupted its previous CAN bus search because a new
+        // command arrived before it finished. The adapter is now idle and ready for the next
+        // command. During handshake this is safe to treat as a completion signal; during
+        // polling we just clear the gate above and let the next timer tick send the next command.
+        if res.contains("STOPPED") {
+            if currentInitStep < 8 { advanceHandshake() }
+            return
         }
+
+        if currentInitStep < 8 && (res.contains("OK") || res.contains("ELM327")) { advanceHandshake(); return }
+        parseCANResponse(res.replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "\r", with: "").replacingOccurrences(of: "\n", with: ""))
     }
 
     private func parseCANResponse(_ clean: String) {
@@ -234,7 +271,7 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
             return (Int(b, radix: 16) ?? 0) * 256 + (Int(a, radix: 16) ?? 0)
         }
         if let v = getVal("411F") { self.rawRunTimeSeconds = v; self.mcuRunTime = String(format: "%02d:%02d:%02d", v / 3600, (v % 3600) / 60, v % 60) }
-        if let v = getVal("62DD80") { let ver = v % 256, rev = v / 256; self.rawVersionData = (version: ver, revision: rev); self.mcuVersion = "\(ver).\(rev)"; if currentInitStep == 6 { advanceHandshake() } }
+        if let v = getVal("62DD80") { let ver = v % 256, rev = v / 256; self.rawVersionData = (version: ver, revision: rev); self.mcuVersion = "\(ver).\(rev)"; if currentInitStep == 7 { advanceHandshake() } }
         if let v = getVal("62DD83") { self.rawPackVoltage = Double(v) * 0.1; self.mcuPackVoltage = String(format: "%.1f V", self.rawPackVoltage) }
         if let v = getVal("62DD84") { self.rawPackCurrent = Double(Int(Int16(bitPattern: UInt16(v)))) * 0.1; self.mcuPackCurrent = String(format: "%.1f A", self.rawPackCurrent) }
         if let r = clean.range(of: "62DD85"), let soc = Int(clean[r.upperBound..<clean.index(r.upperBound, offsetBy: 2)], radix: 16) { self.rawSOCPercentage = min(soc, 100); self.mcuSOC = "\(self.rawSOCPercentage)%" }

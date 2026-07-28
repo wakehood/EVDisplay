@@ -15,12 +15,6 @@ struct GeneralDashboardCardView: View {
         environmentManager ?? localPreviewSource
     }
     
-    private var driveTimeWithoutSeconds: String {
-        let parts = manager.mcuRunTime.split(separator: ":")
-        guard parts.count == 3 else { return manager.mcuRunTime }
-        return "\(parts[0]):\(parts[1])"
-    }
-    
     var body: some View {
         BaseDashboardCard(title: "General", themeColor: .teal) {
             TimelineView(.periodic(from: .now, by: 60)) { timeline in
@@ -29,17 +23,46 @@ struct GeneralDashboardCardView: View {
                         label: "Time",
                         value: timeline.date.formatted(date: .omitted, time: .shortened)
                     )
-                    
+
                     Divider()
-                    
-                    GeneralMetricRow(
-                        label: "Drive Time",
-                        value: driveTimeWithoutSeconds
-                    )
+
+                    DriveTimeRow(seconds: manager.rawRunTimeSeconds)
                 }
                 .padding(.horizontal)
             }
         }
+    }
+}
+
+private struct DriveTimeRow: View {
+    let seconds: Int
+
+    private var hours: Int { seconds / 3600 }
+    private var minutes: Int { (seconds % 3600) / 60 }
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 0) {
+            Text("Drive Time")
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(String(format: "%02d", hours))
+                .font(.system(.title3, design: .monospaced))
+                .fontWeight(.bold)
+            Text("h")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .baselineOffset(6)
+                .padding(.trailing, 5)
+            Text(String(format: "%02d", minutes))
+                .font(.system(.title3, design: .monospaced))
+                .fontWeight(.bold)
+            Text("m")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .baselineOffset(6)
+        }
+        .foregroundColor(.primary)
+        .lineLimit(1)
+        .minimumScaleFactor(0.75)
     }
 }
 
