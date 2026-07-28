@@ -27,7 +27,7 @@ struct ProportionalDashboardView: View {
         return ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: sp) {
                 GeneralDashboardCardView()
-                    .frame(height: 150)
+                    .frame(height: 200)
                 EVDashboardCard()
                     .frame(height: 320)
                 ChargingDashboardCardView()
@@ -82,10 +82,10 @@ struct ProportionalDashboardView: View {
         let totalH = geometry.size.height - sp * 4
         // Proportions fill iPad screens exactly; minimums ensure content fits on iPhone landscape.
         // Row 1 min 260: EVDashboardCard gauge is 160pt + ~40pt title = needs ~200pt, 60pt breathing room.
-        // Row 2 min 220: HealthDashboardCardView 7-item grid needs ~204pt minimum.
+        // Row 2 min 260: HealthDashboardCardView title + header row + 4-row alert grid totals ~246pt.
         // Row 3 min 360: 9-col iPad grid is ~272pt, 6-col iPhone landscape grid is ~348pt.
         let row1H = max(totalH * 0.35, 260)
-        let row2H = max(totalH * 0.28, 220)
+        let row2H = max(totalH * 0.28, 260)
         let row3H = max(totalH * 0.37, 360)
         // Usable width after left/right padding (sp each) + 1 inter-column gap (sp)
         let evColW = (geometry.size.width - sp * 3) * 0.58

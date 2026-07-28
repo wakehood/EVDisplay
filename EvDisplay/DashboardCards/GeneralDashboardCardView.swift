@@ -19,6 +19,13 @@ struct GeneralDashboardCardView: View {
         BaseDashboardCard(title: "General", themeColor: .teal) {
             TimelineView(.periodic(from: .now, by: 60)) { timeline in
                 VStack(spacing: 12) {
+                    ConnectionStatusRow(
+                        status: manager.connectionStatus,
+                        isConnected: manager.isConnected
+                    )
+
+                    Divider()
+
                     GeneralMetricRow(
                         label: "Time",
                         value: timeline.date.formatted(date: .omitted, time: .shortened)
@@ -30,6 +37,31 @@ struct GeneralDashboardCardView: View {
                 }
                 .padding(.horizontal)
             }
+        }
+    }
+}
+
+private struct ConnectionStatusRow: View {
+    let status: String
+    let isConnected: Bool
+
+    private var statusColor: Color {
+        if isConnected { return .green }
+        if status == String(localized: "Bluetooth Off") { return .red }
+        return .orange
+    }
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text("Connection Status")
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(status)
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundColor(statusColor)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
     }
 }
@@ -91,6 +123,6 @@ private struct GeneralMetricRow: View {
 #Preview {
     GeneralDashboardCardView()
         .environment(OBD2ConnectionManager(isPreviewMock: true))
-        .frame(width: 400, height: 170)
+        .frame(width: 400, height: 220)
         .padding()
 }

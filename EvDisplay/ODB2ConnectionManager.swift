@@ -11,7 +11,7 @@ import Observation
 
 @Observable
 class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDelegate {
-    var connectionStatus = "Initializing..."
+    var connectionStatus = String(localized: "Initializing...")
     var isScanning = false
     var receivedLogs: [String] = []
     
@@ -137,7 +137,7 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
             return
         }
         isScanning = true;
-        connectionStatus = "Scanning..."
+        connectionStatus = String(localized: "Scanning...")
         centralManager.scanForPeripherals(withServices: [serialServiceUUID], options: nil)
     }
     
@@ -189,7 +189,7 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
             // Skip this tick if we're still waiting for the previous response.
             // masterTickCounter is only advanced when a command is actually sent, so the
             // same command will be retried on the next tick after the response arrives.
-            guard let self = self, self.connectionStatus == "Connected", !self.waitingForResponse else { return }
+            guard let self = self, self.isConnected, !self.waitingForResponse else { return }
             switch self.masterTickCounter {
             case 0: self.sendCommand("22 DD 83")
             case 1: self.sendCommand("22 DD 84")
@@ -216,14 +216,15 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
                 self.startScanning()
             }
             else {
-                self.connectionStatus = "Bluetooth Off";
+                self.connectionStatus = String(localized: "Bluetooth Off")
+                self.isConnected = false
                 self.isScanning = false
             }
         }
     }
-    func centralManager(_ c: CBCentralManager, didDiscover p: CBPeripheral, advertisementData: [String : Any], rssi: NSNumber) { centralManager.stopScan(); obdPeripheral = p; p.delegate = self; DispatchQueue.main.async { self.isScanning = false; self.connectionStatus = "Connecting..." }; centralManager.connect(p, options: nil) }
-    func centralManager(_ c: CBCentralManager, didConnect p: CBPeripheral) { DispatchQueue.main.async { self.connectionStatus = "Connected" }; p.discoverServices([serialServiceUUID]) }
-    func centralManager(_ c: CBCentralManager, didDisconnectPeripheral p: CBPeripheral, error: Error?) { stopAutomaticPolling(); currentInitStep = 0; waitingForResponse = false; responseTimeoutTask?.cancel(); DispatchQueue.main.async { self.connectionStatus = "Disconnected"; self.obdPeripheral = nil; self.txCharacteristic = nil; self.rxCharacteristic = nil; self.startScanning() }; logMessage("Re-scanning...") }
+    func centralManager(_ c: CBCentralManager, didDiscover p: CBPeripheral, advertisementData: [String : Any], rssi: NSNumber) { centralManager.stopScan(); obdPeripheral = p; p.delegate = self; DispatchQueue.main.async { self.isScanning = false; self.connectionStatus = String(localized: "Connecting...") }; centralManager.connect(p, options: nil) }
+    func centralManager(_ c: CBCentralManager, didConnect p: CBPeripheral) { DispatchQueue.main.async { self.connectionStatus = String(localized: "Connected"); self.isConnected = true }; p.discoverServices([serialServiceUUID]) }
+    func centralManager(_ c: CBCentralManager, didDisconnectPeripheral p: CBPeripheral, error: Error?) { stopAutomaticPolling(); currentInitStep = 0; waitingForResponse = false; responseTimeoutTask?.cancel(); DispatchQueue.main.async { self.connectionStatus = String(localized: "Disconnected"); self.isConnected = false; self.obdPeripheral = nil; self.txCharacteristic = nil; self.rxCharacteristic = nil; self.startScanning() }; logMessage("Re-scanning...") }
     func peripheral(_ p: CBPeripheral, didDiscoverServices error: Error?) { if let services = p.services { for s in services where s.uuid == serialServiceUUID { p.discoverCharacteristics([writeCharacteristicUUID, notifyCharacteristicUUID], for: s) } } }
     
     func peripheral(_ p: CBPeripheral, didDiscoverCharacteristicsFor s: CBService, error: Error?) {
