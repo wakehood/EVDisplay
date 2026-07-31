@@ -41,6 +41,8 @@ class OBD2ConnectionManager: NSObject,  CBCentralManagerDelegate, CBPeripheralDe
     var rawCellStdDev = 0.0
     
     var rawCellTemp = 25.0 //temporary
+    var mcuHighTemp = 25.0
+    var mcuLowTemp = 20.0
     
     // FIX: Separated single-line comma declarations to satisfy the Observation macro criteria
     var alertHardware = 0
