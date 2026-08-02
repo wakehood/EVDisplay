@@ -14,6 +14,7 @@ struct EvDisplayApp: App {
                         .zIndex(1)
                 }
             }
+            .preferredColorScheme(.dark)
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
                     withAnimation(.easeOut(duration: 0.7)) {

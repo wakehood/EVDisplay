@@ -9,7 +9,7 @@ import SwiftUI
 
 struct HealthDashboardCardView: View {
     @Environment(OBD2ConnectionManager.self) private var environmentManager: OBD2ConnectionManager?
-    @State private var localPreviewSource = OBD2ConnectionManager(isPreviewMock: false)
+    @State private var localPreviewSource = OBD2ConnectionManager(isPreviewMock: true)
     
     private var manager: OBD2ConnectionManager {
         environmentManager ?? localPreviewSource
@@ -28,7 +28,7 @@ struct HealthDashboardCardView: View {
     }
     
     private var healthColor: Color {
-        activeAlerts.isEmpty ? .green : .red
+        activeAlerts.isEmpty ? Color("Primary Green") : .red
     }
     
     private var alertItems: [(label: String, isActive: Bool)] {
@@ -75,7 +75,7 @@ private struct HealthAlertFlagView: View {
     let isActive: Bool
     
     private var color: Color {
-        isActive ? .red : .green
+        isActive ? .red : Color("Primary Green")
     }
     
     var body: some View {

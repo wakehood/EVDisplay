@@ -8,7 +8,7 @@ import SwiftUI
 
 struct EVDashboardCard: View {
     @Environment(OBD2ConnectionManager.self) private var environmentManager: OBD2ConnectionManager?
-    @State private var localPreviewSource = OBD2ConnectionManager(isPreviewMock: false)
+    @State private var localPreviewSource = OBD2ConnectionManager(isPreviewMock: true)
     
     private var manager: OBD2ConnectionManager {
         environmentManager ?? localPreviewSource

@@ -9,7 +9,7 @@ import SwiftUI
 
 struct GeneralDashboardCardView: View {
     @Environment(OBD2ConnectionManager.self) private var environmentManager: OBD2ConnectionManager?
-    @State private var localPreviewSource = OBD2ConnectionManager(isPreviewMock: false)
+    @State private var localPreviewSource = OBD2ConnectionManager(isPreviewMock: true)
     
     private var manager: OBD2ConnectionManager {
         environmentManager ?? localPreviewSource
@@ -17,26 +17,17 @@ struct GeneralDashboardCardView: View {
     
     var body: some View {
         BaseDashboardCard(title: "General", themeColor: .teal) {
-            TimelineView(.periodic(from: .now, by: 60)) { timeline in
-                VStack(spacing: 12) {
-                    ConnectionStatusRow(
-                        status: manager.connectionStatus,
-                        isConnected: manager.isConnected
-                    )
+            VStack(spacing: 12) {
+                ConnectionStatusRow(
+                    status: manager.connectionStatus,
+                    isConnected: manager.isConnected
+                )
 
-                    Divider()
+                Divider()
 
-                    GeneralMetricRow(
-                        label: "Time",
-                        value: timeline.date.formatted(date: .omitted, time: .shortened)
-                    )
-
-                    Divider()
-
-                    DriveTimeRow(seconds: manager.rawRunTimeSeconds)
-                }
-                .padding(.horizontal)
+                DriveTimeRow(seconds: manager.rawRunTimeSeconds)
             }
+            .padding(.horizontal)
         }
     }
 }
@@ -98,27 +89,6 @@ private struct DriveTimeRow: View {
     }
 }
 
-private struct GeneralMetricRow: View {
-    let label: String
-    let value: String
-    
-    var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(label)
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundColor(.secondary)
-            
-            Spacer()
-            
-            Text(value)
-                .font(.system(.title3, design: .monospaced))
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-        }
-    }
-}
 
 #Preview {
     GeneralDashboardCardView()
