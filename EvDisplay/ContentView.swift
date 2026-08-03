@@ -5,7 +5,7 @@ struct ContentView: View {
 }
 
 struct ProportionalDashboardView: View {
-    @State private var connectionManager = OBD2ConnectionManager(isPreviewMock: true)
+    @State private var connectionManager = OBD2ConnectionManager(isPreviewMock: false)
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -25,32 +25,46 @@ struct ProportionalDashboardView: View {
     private func iPhonePortraitLayout(geometry: GeometryProxy) -> some View {
         let sp: CGFloat = 16
         return ScrollView(.vertical, showsIndicators: false) {
-            MainDashboardCardView()
-                .frame(height: 540)
-                .padding(sp)
-
-            busLog
+            MCUDashboardCardView()
+                .frame(height: 500)
+                .padding([.horizontal, .top], sp)
+            VCUDashboardCardView()
+                .frame(height: 300)
                 .padding(.horizontal, sp)
+                .padding(.top, 8)
+            if !connectionManager.isPreviewMock && connectionManager.isConnected {
+                busLog
+                    .padding(.horizontal, sp)
+                    .padding(.top, 8)
+            }
         }
         .background(Color("Shadow Background"))
     }
 
     // MARK: - iPad + iPhone Landscape
     //
-    // MainDashboardCardView fills the screen and handles its own internal layout.
-    // On iPhone landscape the minimum height kicks in and ScrollView allows scrolling.
+    // MCU (60%) and VCU (40%) panels sit side by side.
+    // On iPhone landscape the minimum card height kicks in and ScrollView allows scrolling.
     private func landscapeLayout(geometry: GeometryProxy) -> some View {
         let sp: CGFloat = 12
         let cardH = max(geometry.size.height - sp * 2, 280)
+        let totalWidth = geometry.size.width - sp * 3   // left pad + gap + right pad
+        let mcuWidth = totalWidth * 0.60
+        let vcuWidth = totalWidth * 0.40
 
         return ScrollView(.vertical, showsIndicators: false) {
-            MainDashboardCardView()
-                .frame(maxWidth: .infinity)
-                .frame(height: cardH)
-                .padding(sp)
+            HStack(alignment: .top, spacing: sp) {
+                MCUDashboardCardView()
+                    .frame(width: mcuWidth, height: cardH)
+                VCUDashboardCardView()
+                    .frame(width: vcuWidth, height: cardH)
+            }
+            .padding(sp)
 
-            busLog
-                .padding(.horizontal, sp)
+            if !connectionManager.isPreviewMock && connectionManager.isConnected {
+                busLog
+                    .padding(.horizontal, sp)
+            }
         }
         .background(Color("Shadow Background"))
     }

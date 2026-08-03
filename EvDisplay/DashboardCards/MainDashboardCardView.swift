@@ -87,16 +87,9 @@ struct MainDashboardCardView: View {
 
                 // ── Power section ──
                 VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Power")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text(isCharging ? "CHARGE" : "DEMAND")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(powerColor)
-                            .tracking(0.5)
-                    }
+                    Text("Power")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(.secondary)
 
                     HStack(alignment: .center, spacing: 10) {
                         PowerBarView(
@@ -135,7 +128,7 @@ struct MainDashboardCardView: View {
                     Text("Temp")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .foregroundColor(.secondary)
-                    TemperatureGaugeView(temp1: manager.mcuLowTemp, temp2: manager.mcuHighTemp)
+                    TemperatureGaugeView(temp1: manager.rawMcuLowTemp, temp2: manager.rawMcuHighTemp)
                         .frame(width: 56, height: barHeight)
                 }
                 .frame(maxHeight: .infinity)
@@ -148,13 +141,15 @@ struct MainDashboardCardView: View {
                     Text("Motor Speed")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .foregroundColor(.secondary)
-                    // rawMotorRPM telemetry not yet available — placeholder 0
-                    Gauge(value: 0.0, in: 0...18_000) {
+                    Gauge(value: manager.rawVcuMotorRPM, in: 0...18_000) {
                         Text("RPM")
                     } currentValueLabel: {
-                        Text("0")
+                        Text(manager.rawVcuMotorRPM >= 1000
+                             ? String(format: "%.1fK", manager.rawVcuMotorRPM / 1000)
+                             : String(format: "%.0f", manager.rawVcuMotorRPM))
                     }
                     .gaugeStyle(SemicircleMotorSpeedGaugeStyle())
+                    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: manager.rawVcuMotorRPM)
                     .frame(width: gaugeSize, height: gaugeSize)
                 }
                 .frame(maxHeight: .infinity)
@@ -211,12 +206,15 @@ struct MainDashboardCardView: View {
                     Text("Motor Speed")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .foregroundColor(.secondary)
-                    Gauge(value: 0.0, in: 0...18_000) {
+                    Gauge(value: manager.rawVcuMotorRPM, in: 0...18_000) {
                         Text("RPM")
                     } currentValueLabel: {
-                        Text("0")
+                        Text(manager.rawVcuMotorRPM >= 1000
+                             ? String(format: "%.1fK", manager.rawVcuMotorRPM / 1000)
+                             : String(format: "%.0f", manager.rawVcuMotorRPM))
                     }
                     .gaugeStyle(SemicircleMotorSpeedGaugeStyle())
+                    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: manager.rawVcuMotorRPM)
                     .frame(width: gaugeSize, height: gaugeSize)
                 }
                 .frame(maxWidth: .infinity)
@@ -226,16 +224,9 @@ struct MainDashboardCardView: View {
 
             // ── Power + temperature row ──
             HStack(alignment: .center, spacing: 12) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Power")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text(isCharging ? "CHARGE" : "DEMAND")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(powerColor)
-                        .tracking(0.5)
-                }
+                Text("Power")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundColor(.secondary)
 
                 PowerBarView(
                     normalizedPower: normalizedPower,
@@ -264,7 +255,7 @@ struct MainDashboardCardView: View {
                     Text("Temp")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .foregroundColor(.secondary)
-                    TemperatureGaugeView(temp1: manager.mcuLowTemp, temp2: manager.mcuHighTemp)
+                    TemperatureGaugeView(temp1: manager.rawMcuLowTemp, temp2: manager.rawMcuHighTemp)
                         .frame(width: 50, height: 100)
                 }
             }

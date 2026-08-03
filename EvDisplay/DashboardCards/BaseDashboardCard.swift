@@ -10,11 +10,15 @@ import SwiftUI
 struct BaseDashboardCard<Content: View>: View {
     let title: String?
     let themeColor: Color
+    let outlineOpacity: Double
+    let outlineWidth: CGFloat
     let content: Content
 
-    init(title: String? = nil, themeColor: Color, @ViewBuilder content: () -> Content) {
+    init(title: String? = nil, themeColor: Color, outlineOpacity: Double = 0.6, outlineWidth: CGFloat = 1.5, @ViewBuilder content: () -> Content) {
         self.title = title
         self.themeColor = themeColor
+        self.outlineOpacity = outlineOpacity
+        self.outlineWidth = outlineWidth
         self.content = content()
     }
 
@@ -24,7 +28,7 @@ struct BaseDashboardCard<Content: View>: View {
                 .fill(Color.white.opacity(0.08))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(themeColor.opacity(0.6), lineWidth: 1.5)
+                        .stroke(themeColor.opacity(outlineOpacity), lineWidth: outlineWidth)
                 )
 
             VStack(alignment: .leading) {

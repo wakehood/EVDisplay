@@ -41,33 +41,43 @@ struct AdaptiveSemicircleSoCStyle: GaugeStyle {
                 .shadow(color: .green.opacity(percentage > 0.5 ? 0.15 : 0.0), radius: 8)
             
             // 3. Central Elements text alignment grid
-            VStack(spacing: 2) {
-                Spacer()
-                
+            VStack(spacing: 0) {
                 configuration.currentValueLabel
                     .font(.system(size: 44, weight: .black, design: .monospaced))
                     .foregroundColor(.primary)
-                
+
                 configuration.label
                     .font(.system(.caption2, design: .rounded))
                     .fontWeight(.bold)
                     .foregroundColor(.secondary)
                     .textCase(.uppercase)
                     .tracking(2.0)
-                
-                Spacer()
-                
-                // 4. Boundary Numbers
-                HStack {
-                    Text("0%")
-                    Spacer()
-                    Text("100%")
-                }
-                .font(.system(.caption2, design: .monospaced))
-                .foregroundColor(.secondary)
-                .padding(.horizontal, -8)
             }
-            .padding(.top, 40)
+            .offset(y: 25)
+
+            // 4. Endpoint Tick Marks
+            HStack {
+                Capsule()
+                    .fill(Color.primary.opacity(0.3))
+                    .frame(width: 2, height: 8)
+                Spacer()
+                Capsule()
+                    .fill(Color.primary.opacity(0.3))
+                    .frame(width: 2, height: 8)
+            }
+            .offset(y: 11)
+
+            // 5. Boundary Numbers – positioned below the arc endpoints
+            HStack {
+                Text("0%")
+                    .offset(x: -8)
+                Spacer()
+                Text("100%")
+                    .offset(x: 8)
+            }
+            .font(.system(.caption2, design: .monospaced))
+            .foregroundColor(.secondary)
+            .offset(y: 26)
         }
         .aspectRatio(1, contentMode: .fit)
     }

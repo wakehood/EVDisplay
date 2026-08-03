@@ -41,8 +41,15 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
     var rawCellStdDev = 0.0
 
     var rawCellTemp = 25.0 //temporary
-    var mcuHighTemp = 25.0
-    var mcuLowTemp = 20.0
+    var rawMcuHighTemp = 25.0
+    var rawMcuLowTemp = 20.0
+
+    var rawPackCapacityKwh = 20.0
+    var rawAvailableEnergyKwh: Double { Double(rawSOCPercentage) / 100.0 * rawPackCapacityKwh }
+
+    var rawVcuMotorRPM = 0.0
+    var rawVcuHighTemp = 35.0
+    var rawVcuLowTemp  = 28.0
 
     // FIX: Separated single-line comma declarations to satisfy the Observation macro criteria
     var alertHardware = 0
@@ -52,6 +59,11 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
     var alertLVC = 0
     var alertHiTemp = 0
     var alertLoTemp = 0
+
+    var vcuAlertHiTemp = 0
+    var vcuAlertPowerLimit = 0
+    var vcuAlertMotorFault = 0
+    var vcuAlertElectricalFault = 0
 
     private var centralManager: CBCentralManager!
     private var obdPeripheral: CBPeripheral?
@@ -68,16 +80,20 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
     private var waitingForResponse = false
     private var responseTimeoutTask: DispatchWorkItem?
 
+    let isPreviewMock: Bool
+
     private let serialServiceUUID = CBUUID(string: "FFF0")
     private let writeCharacteristicUUID = CBUUID(string: "FFF1")
     private let notifyCharacteristicUUID = CBUUID(string: "FFF2")
 
     override init() {
+        isPreviewMock = false
         super.init()
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
 
     init(isPreviewMock: Bool = false) {
+        self.isPreviewMock = isPreviewMock
         super.init()
 
         if isPreviewMock {
@@ -102,6 +118,11 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
         self.rawCellStdDev = 0.008
 
         self.rawCellTemp = 30.0
+        self.rawMcuLowTemp = 24.0
+        self.rawMcuHighTemp = 31.0
+        self.rawVcuMotorRPM = 3_500.0
+        self.rawVcuLowTemp  = 35.0
+        self.rawVcuHighTemp = 42.0
 
         mockTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
@@ -115,6 +136,14 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
                 self.rawCellMin = self.rawCellMean - Double.random(in: 0.01...0.03)
                 self.rawCellMax = self.rawCellMean + Double.random(in: 0.01...0.03)
                 self.rawCellStdDev = max(0.002, min(0.040, self.rawCellStdDev + Double.random(in: -0.001...0.001)))
+
+                // Temperatures drift slowly; high always stays above low
+                self.rawMcuLowTemp  = max(15.0, min(45.0, self.rawMcuLowTemp  + Double.random(in: -0.3...0.3)))
+                self.rawMcuHighTemp = max(self.rawMcuLowTemp + 2.0, min(60.0, self.rawMcuHighTemp + Double.random(in: -0.3...0.3)))
+
+                self.rawVcuMotorRPM = max(0, min(18_000, self.rawVcuMotorRPM + Double.random(in: -300...300)))
+                self.rawVcuLowTemp  = max(20.0, min(55.0, self.rawVcuLowTemp  + Double.random(in: -0.5...0.5)))
+                self.rawVcuHighTemp = max(self.rawVcuLowTemp + 2.0, min(75.0, self.rawVcuHighTemp + Double.random(in: -0.5...0.5)))
 
                 if self.rawSOCPercentage > 1 && Double.random(in: 0...1) > 0.7 {
                     self.rawSOCPercentage -= 1
