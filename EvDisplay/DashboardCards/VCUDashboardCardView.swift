@@ -9,7 +9,10 @@ import SwiftUI
 
 struct VCUDashboardCardView: View {
     @Environment(OBD2ConnectionManager.self) private var manager: OBD2ConnectionManager
+    @Environment(\.horizontalSizeClass) private var hSizeClass
     @State private var showingVCUStatus = false
+
+    private var isIPad: Bool { hSizeClass == .regular }
 
     private var anyAlert: Bool {
         manager.vcuAlertHiTemp == 1          ||
@@ -22,7 +25,7 @@ struct VCUDashboardCardView: View {
         BaseDashboardCard(themeColor: Color("Gold Accent")) {
             ZStack(alignment: .topLeading) {
                 GeometryReader { geo in
-                    let gaugeSize = min(min(geo.size.width * 0.82, geo.size.height * 0.60), 220.0)
+                    let gaugeSize = min(min(geo.size.width * 0.82, geo.size.height * 0.60), isIPad ? 360.0 : 220.0)
 
                     VStack(spacing: 0) {
 
@@ -34,7 +37,7 @@ struct VCUDashboardCardView: View {
                                  ? String(format: "%.1fK", manager.rawVcuMotorRPM / 1000)
                                  : String(format: "%.0f", manager.rawVcuMotorRPM))
                         }
-                        .gaugeStyle(SemicircleMotorSpeedGaugeStyle())
+                        .gaugeStyle(SemicircleMotorSpeedGaugeStyle(valueFontSize: isIPad ? 64 : 44))
                         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: manager.rawVcuMotorRPM)
                         .frame(width: gaugeSize, height: gaugeSize)
                         .frame(maxWidth: .infinity)
@@ -47,10 +50,10 @@ struct VCUDashboardCardView: View {
                         HStack(alignment: .center, spacing: 12) {
                             VStack(spacing: 4) {
                                 Text("VCU Temp")
-                                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                                    .font(.system(size: isIPad ? 14 : 10, weight: .bold, design: .rounded))
                                     .foregroundColor(.secondary)
                                 TemperatureGaugeView(temp1: manager.rawVcuLowTemp, temp2: manager.rawVcuHighTemp)
-                                    .frame(width: 52, height: 72)
+                                    .frame(width: isIPad ? 72 : 52, height: isIPad ? 100 : 72)
                             }
 
                             Spacer()

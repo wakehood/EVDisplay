@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct AdaptiveSemicircleSoCStyle: GaugeStyle {
+    var valueFontSize: CGFloat = 44
+
     private let startAngle = Angle(degrees: 180)
     private let endAngle = Angle(degrees: 360)
     
@@ -43,7 +45,7 @@ struct AdaptiveSemicircleSoCStyle: GaugeStyle {
             // 3. Central Elements text alignment grid
             VStack(spacing: 0) {
                 configuration.currentValueLabel
-                    .font(.system(size: 44, weight: .black, design: .monospaced))
+                    .font(.system(size: valueFontSize, weight: .black, design: .monospaced))
                     .foregroundColor(.primary)
 
                 configuration.label

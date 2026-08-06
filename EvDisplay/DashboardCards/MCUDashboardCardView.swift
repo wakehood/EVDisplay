@@ -9,7 +9,10 @@ import SwiftUI
 
 struct MCUDashboardCardView: View {
     @Environment(OBD2ConnectionManager.self) private var manager: OBD2ConnectionManager
+    @Environment(\.horizontalSizeClass) private var hSizeClass
     @State private var showingHealth = false
+
+    private var isIPad: Bool { hSizeClass == .regular }
 
     private let scaleThresholds: [Double] = [0, 2, 5, 10, 20, 50, 100, 200, 500]
 
@@ -63,8 +66,8 @@ struct MCUDashboardCardView: View {
         powerColor: Color,
         normalizedPower: Double
     ) -> some View {
-        let gaugeSize = min(geo.size.height * 0.72, 180.0)
-        let barHeight = min(gaugeSize * 0.66, 120.0)
+        let gaugeSize = min(geo.size.height * 0.72, isIPad ? 300.0 : 180.0)
+        let barHeight = min(gaugeSize * 0.66, isIPad ? 200.0 : 120.0)
 
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 0) {
@@ -75,12 +78,12 @@ struct MCUDashboardCardView: View {
                 } currentValueLabel: {
                     Text("\(manager.rawSOCPercentage)%")
                 }
-                .gaugeStyle(AdaptiveSemicircleSoCStyle())
+                .gaugeStyle(AdaptiveSemicircleSoCStyle(valueFontSize: isIPad ? 64 : 44))
                 .animation(.spring(response: 0.4, dampingFraction: 0.75), value: manager.rawSOCPercentage)
                 .frame(width: gaugeSize, height: gaugeSize)
                 .overlay(alignment: .bottom) {
                     Text(String(format: "%.1f kWh", manager.rawAvailableEnergyKwh))
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .font(.system(size: isIPad ? 13 : 9, weight: .bold, design: .monospaced))
                         .foregroundColor(.secondary)
                         .padding(.bottom, gaugeSize * 0.12)
                 }
@@ -94,7 +97,7 @@ struct MCUDashboardCardView: View {
                 VStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Power")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .font(.system(size: isIPad ? 17 : 12, weight: .bold, design: .rounded))
                             .foregroundColor(.secondary)
 
                         HStack(alignment: .center, spacing: 10) {
@@ -106,7 +109,7 @@ struct MCUDashboardCardView: View {
                             )
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(String(format: "%.2f kW", abs(powerKW)))
-                                    .font(.system(.title3, design: .monospaced))
+                                    .font(.system(size: isIPad ? 28 : 20, design: .monospaced))
                                     .fontWeight(.black)
                                     .foregroundColor(powerColor)
                                     .lineLimit(1)
@@ -117,7 +120,7 @@ struct MCUDashboardCardView: View {
                                 Text(String(format: "Pack   %.1fV", manager.rawPackVoltage))
                                 Text(String(format: "Current %.1fA", manager.rawPackCurrent))
                             }
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .font(.system(size: isIPad ? 15 : 11, weight: .bold, design: .monospaced))
                             .foregroundColor(.secondary)
                         }
 
@@ -131,7 +134,7 @@ struct MCUDashboardCardView: View {
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Cells")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .font(.system(size: isIPad ? 15 : 10, weight: .bold, design: .rounded))
                             .foregroundColor(.secondary)
                         CellSummaryView(manager: manager)
                         Spacer(minLength: 0)
@@ -302,14 +305,17 @@ private struct CellMetricRow: View {
     let unit: String
     let format: String
 
+    @Environment(\.horizontalSizeClass) private var hSizeClass
+    private var isIPad: Bool { hSizeClass == .regular }
+
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
             Text(label)
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                .font(.system(size: isIPad ? 13 : 9, weight: .semibold, design: .rounded))
                 .foregroundColor(.secondary)
-                .frame(width: 22, alignment: .leading)
+                .frame(width: isIPad ? 30 : 22, alignment: .leading)
             Text(String(format: format, value) + unit)
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .font(.system(size: isIPad ? 14 : 10, weight: .bold, design: .monospaced))
                 .foregroundColor(.primary)
         }
     }

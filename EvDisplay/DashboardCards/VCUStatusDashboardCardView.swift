@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct VCUStatusDashboardCardView: View {
+    @Environment(\.dismiss) var dismiss
     @Environment(OBD2ConnectionManager.self) private var environmentManager: OBD2ConnectionManager?
     @State private var localPreviewSource = OBD2ConnectionManager(isPreviewMock: true)
 
@@ -63,6 +64,14 @@ struct VCUStatusDashboardCardView: View {
                 }
             }
             .padding(.horizontal)
+        }
+        .overlay(alignment: .topTrailing) {
+            Button(action: { dismiss()}) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .padding(10)
+            }
         }
     }
 }

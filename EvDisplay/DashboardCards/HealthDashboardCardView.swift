@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct HealthDashboardCardView: View {
+    @Environment(\.dismiss) var dismiss
+
     @Environment(OBD2ConnectionManager.self) private var environmentManager: OBD2ConnectionManager?
     @State private var localPreviewSource = OBD2ConnectionManager(isPreviewMock: true)
     
@@ -51,14 +53,14 @@ struct HealthDashboardCardView: View {
                         .font(.system(.title3, design: .rounded))
                         .fontWeight(.bold)
                         .foregroundColor(healthColor)
-                    
+
                     Spacer()
-                    
+
                     Text("\(activeAlerts.count)/7")
                         .font(.system(size: 13, weight: .bold, design: .monospaced))
                         .foregroundColor(.secondary)
                 }
-                
+
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
                     ForEach(alertItems, id: \.label) { item in
                         HealthAlertFlagView(label: item.label, isActive: item.isActive)
@@ -66,6 +68,14 @@ struct HealthDashboardCardView: View {
                 }
             }
             .padding(.horizontal)
+        }
+        .overlay(alignment: .topTrailing) {
+            Button(action: { dismiss()}) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .padding(10)
+            }
         }
     }
 }
