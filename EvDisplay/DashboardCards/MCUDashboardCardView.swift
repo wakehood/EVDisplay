@@ -66,26 +66,26 @@ struct MCUDashboardCardView: View {
         powerColor: Color,
         normalizedPower: Double
     ) -> some View {
-        let gaugeSize = min(geo.size.height * 0.72, isIPad ? 300.0 : 180.0)
+        let gaugeSize = min(geo.size.height * 0.72, isIPad ? GaugeMetrics.socGaugeMaxIPad : GaugeMetrics.socGaugeMaxPhone)
         let barHeight = min(gaugeSize * 0.66, isIPad ? 200.0 : 120.0)
 
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 0) {
 
                 // ── SOC gauge + available energy ──
-                Gauge(value: Double(manager.rawSOCPercentage), in: 0...100) {
-                    Text("Charge")
-                } currentValueLabel: {
-                    Text("\(manager.rawSOCPercentage)%")
-                }
-                .gaugeStyle(AdaptiveSemicircleSoCStyle(valueFontSize: isIPad ? 64 : 44))
-                .animation(.spring(response: 0.4, dampingFraction: 0.75), value: manager.rawSOCPercentage)
-                .frame(width: gaugeSize, height: gaugeSize)
-                .overlay(alignment: .bottom) {
+                VStack(spacing: 6) {
+                    Gauge(value: Double(manager.rawSOCPercentage), in: 0...100) {
+                        Text("Charge")
+                    } currentValueLabel: {
+                        Text("\(manager.rawSOCPercentage)%")
+                    }
+                    .gaugeStyle(AdaptiveSemicircleSoCStyle(valueFontSize: isIPad ? 64 : 44))
+                    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: manager.rawSOCPercentage)
+                    .frame(width: gaugeSize, height: gaugeSize)
+
                     Text(String(format: "%.1f kWh", manager.rawAvailableEnergyKwh))
-                        .font(.system(size: isIPad ? 13 : 9, weight: .bold, design: .monospaced))
+                        .font(.system(size: isIPad ? 26 : 18, weight: .bold, design: .monospaced))
                         .foregroundColor(.secondary)
-                        .padding(.bottom, gaugeSize * 0.12)
                 }
                 .frame(maxHeight: .infinity)
                 .padding(.horizontal, 6)
@@ -136,7 +136,13 @@ struct MCUDashboardCardView: View {
                         Text("Cells")
                             .font(.system(size: isIPad ? 15 : 10, weight: .bold, design: .rounded))
                             .foregroundColor(.secondary)
-                        CellSummaryView(manager: manager)
+                        CellVoltageRangeGaugeView(
+                            cellMin:    manager.rawCellMin,
+                            cellMax:    manager.rawCellMax,
+                            lowCutoff:  manager.rawMcuLowVoltageThresh,
+                            highCutoff: manager.rawMcuHighVoltageCutoff
+                        )
+                        .frame(height: GaugeMetrics.cellGaugeHeight)
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 10)
@@ -162,25 +168,25 @@ struct MCUDashboardCardView: View {
         powerColor: Color,
         normalizedPower: Double
     ) -> some View {
-        let gaugeSize = min(geo.size.width * 0.42, 150.0)
+        let gaugeSize = min(geo.size.width * 0.42, GaugeMetrics.socGaugeMaxPortrait)
 
         VStack(spacing: 10) {
 
             // ── Top row: SOC gauge + power summary ──
             HStack(alignment: .top) {
-                Gauge(value: Double(manager.rawSOCPercentage), in: 0...100) {
-                    Text("Charge")
-                } currentValueLabel: {
-                    Text("\(manager.rawSOCPercentage)%")
-                }
-                .gaugeStyle(AdaptiveSemicircleSoCStyle())
-                .animation(.spring(response: 0.4, dampingFraction: 0.75), value: manager.rawSOCPercentage)
-                .frame(width: gaugeSize, height: gaugeSize)
-                .overlay(alignment: .bottom) {
+                VStack(spacing: 6) {
+                    Gauge(value: Double(manager.rawSOCPercentage), in: 0...100) {
+                        Text("Charge")
+                    } currentValueLabel: {
+                        Text("\(manager.rawSOCPercentage)%")
+                    }
+                    .gaugeStyle(AdaptiveSemicircleSoCStyle())
+                    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: manager.rawSOCPercentage)
+                    .frame(width: gaugeSize, height: gaugeSize)
+
                     Text(String(format: "%.1f kWh", manager.rawAvailableEnergyKwh))
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .font(.system(size: 18, weight: .bold, design: .monospaced))
                         .foregroundColor(.secondary)
-                        .padding(.bottom, gaugeSize * 0.12)
                 }
                 .frame(maxWidth: .infinity, alignment: .top)
 
@@ -191,7 +197,7 @@ struct MCUDashboardCardView: View {
                         normalizedPower: normalizedPower,
                         powerColor: powerColor,
                         thresholds: scaleThresholds,
-                        barHeight: 90
+                        barHeight: gaugeSize
                     )
                     VStack(alignment: .leading, spacing: 5) {
                         Text(String(format: "%.2f kW", abs(powerKW)))
@@ -207,26 +213,31 @@ struct MCUDashboardCardView: View {
                     .font(.system(size: 10, weight: .bold, design: .monospaced))
                     .foregroundColor(.secondary)
                 }
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.vertical, 4)
             }
+            .frame(maxHeight: .infinity)
 
             Divider()
 
-            // ── Cell summary row ──
+            // ── Cell voltage range ──
             VStack(alignment: .leading, spacing: 6) {
                 Text("Cells")
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundColor(.secondary)
-                CellSummaryView(manager: manager)
+                CellVoltageRangeGaugeView(
+                    cellMin:    manager.rawCellMin,
+                    cellMax:    manager.rawCellMax,
+                    lowCutoff:  manager.rawMcuLowVoltageThresh,
+                    highCutoff: manager.rawMcuHighVoltageCutoff
+                )
+                .frame(height: GaugeMetrics.cellGaugeHeight)
             }
             .padding(.horizontal, 4)
 
             Divider()
 
             mcuStatusBar
-
-            Spacer(minLength: 0)
         }
     }
 
@@ -244,7 +255,8 @@ struct MCUDashboardCardView: View {
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundColor(.secondary)
                 TemperatureGaugeView(temp1: manager.rawMcuLowTemp, temp2: manager.rawMcuHighTemp)
-                    .frame(width: 52, height: 72)
+                    .frame(width: isIPad ? GaugeMetrics.thermometerWidthIPad  : GaugeMetrics.thermometerWidth,
+                           height: isIPad ? GaugeMetrics.thermometerHeightIPad : GaugeMetrics.thermometerHeight)
             }
             .frame(maxWidth: .infinity, alignment: .center)
 
@@ -276,48 +288,6 @@ struct MCUDashboardCardView: View {
             }
         }
         return 0.0
-    }
-}
-
-// MARK: - Cell Voltage Summary
-
-private struct CellSummaryView: View {
-    let manager: OBD2ConnectionManager
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 6) {
-            VStack(alignment: .leading, spacing: 5) {
-                CellMetricRow(label: "Min", value: manager.rawCellMin, unit: "V",  format: "%.3f")
-                CellMetricRow(label: "Max", value: manager.rawCellMax, unit: "V",  format: "%.3f")
-            }
-            Divider()
-            VStack(alignment: .leading, spacing: 5) {
-                CellMetricRow(label: "Avg", value: manager.rawCellMean,          unit: "V",  format: "%.3f")
-                CellMetricRow(label: "σ",   value: manager.rawCellStdDev * 1000, unit: "mV", format: "%.1f")
-            }
-        }
-    }
-}
-
-private struct CellMetricRow: View {
-    let label: String
-    let value: Double
-    let unit: String
-    let format: String
-
-    @Environment(\.horizontalSizeClass) private var hSizeClass
-    private var isIPad: Bool { hSizeClass == .regular }
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text(label)
-                .font(.system(size: isIPad ? 13 : 9, weight: .semibold, design: .rounded))
-                .foregroundColor(.secondary)
-                .frame(width: isIPad ? 30 : 22, alignment: .leading)
-            Text(String(format: format, value) + unit)
-                .font(.system(size: isIPad ? 14 : 10, weight: .bold, design: .monospaced))
-                .foregroundColor(.primary)
-        }
     }
 }
 

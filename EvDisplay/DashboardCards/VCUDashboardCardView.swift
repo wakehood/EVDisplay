@@ -25,7 +25,7 @@ struct VCUDashboardCardView: View {
         BaseDashboardCard(themeColor: Color("Gold Accent")) {
             ZStack(alignment: .topLeading) {
                 GeometryReader { geo in
-                    let gaugeSize = min(min(geo.size.width * 0.82, geo.size.height * 0.60), isIPad ? 360.0 : 220.0)
+                    let gaugeSize = min(min(geo.size.width * 0.82, geo.size.height * 0.60), isIPad ? GaugeMetrics.motorGaugeMaxIPad : GaugeMetrics.motorGaugeMaxPhone)
 
                     VStack(spacing: 0) {
 
@@ -53,7 +53,8 @@ struct VCUDashboardCardView: View {
                                     .font(.system(size: isIPad ? 14 : 10, weight: .bold, design: .rounded))
                                     .foregroundColor(.secondary)
                                 TemperatureGaugeView(temp1: manager.rawVcuLowTemp, temp2: manager.rawVcuHighTemp)
-                                    .frame(width: isIPad ? 72 : 52, height: isIPad ? 100 : 72)
+                                    .frame(width: isIPad ? GaugeMetrics.thermometerWidthIPad  : GaugeMetrics.thermometerWidth,
+                                           height: isIPad ? GaugeMetrics.thermometerHeightIPad : GaugeMetrics.thermometerHeight)
                             }
 
                             Spacer()

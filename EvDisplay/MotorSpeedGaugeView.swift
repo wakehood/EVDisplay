@@ -21,7 +21,7 @@ struct SemicircleMotorSpeedGaugeStyle: GaugeStyle {
             // 1. Semi-Transparent Background Scale Track
             Circle()
                 .trim(from: startAngle.degrees / 360, to: endAngle.degrees / 360)
-                .stroke(Color.white.opacity(0.15), style: StrokeStyle(lineWidth: 14, lineCap: .round))
+                .stroke(Color.white.opacity(0.15), style: StrokeStyle(lineWidth: GaugeMetrics.gaugeStrokeWidth, lineCap: .round))
                 .rotationEffect(.degrees(0))
 
             // 2. Active RPM Arc + Redline Glow
@@ -39,7 +39,7 @@ struct SemicircleMotorSpeedGaugeStyle: GaugeStyle {
                         startAngle: startAngle,
                         endAngle: endAngle
                     ),
-                    style: StrokeStyle(lineWidth: 14, lineCap: .round)
+                    style: StrokeStyle(lineWidth: GaugeMetrics.gaugeStrokeWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(0))
                 .shadow(color: .red.opacity(percentage > 0.85 ? 0.3 : 0.0), radius: 8)
@@ -105,7 +105,7 @@ struct MotorSpeedGaugeView: View {
                  : String(format: "%.0f", motorRPM))
         }
         .gaugeStyle(SemicircleMotorSpeedGaugeStyle())
-        .frame(width: 240, height: 240)
+        .frame(width: GaugeMetrics.motorGaugeMaxPhone, height: GaugeMetrics.motorGaugeMaxPhone)
         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: motorRPM)
     }
 }

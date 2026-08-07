@@ -5,7 +5,7 @@ struct ContentView: View {
 }
 
 struct ProportionalDashboardView: View {
-    @State private var connectionManager = OBD2ConnectionManager(isPreviewMock: false)
+    @State private var connectionManager = OBD2ConnectionManager(isPreviewMock: true)
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass

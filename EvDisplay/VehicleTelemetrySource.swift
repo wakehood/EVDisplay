@@ -30,6 +30,8 @@ class VehicleTelemetry: NSObject {
     var rawCellMax = 0.0
     var rawCellMean = 0.0
     var rawCellStdDev = 0.0
+    var rawMcuHighVoltageCutoff = 0.0  //volts
+    var rawMcuLowVoltageCutoff  = 0.0 //volts
     
     var rawCellTemp = 0.0
     

@@ -21,7 +21,7 @@ struct AdaptiveSemicircleSoCStyle: GaugeStyle {
             // 1. Structural Track Base
             Circle()
                 .trim(from: 0.5, to: 1.0)
-                .stroke(Color.primary.opacity(0.1), style: StrokeStyle(lineWidth: 16, lineCap: .round))
+                .stroke(Color.primary.opacity(0.1), style: StrokeStyle(lineWidth: GaugeMetrics.gaugeStrokeWidth, lineCap: .round))
             
             // 2. Active Gradient Fill Color Path
             Circle()
@@ -38,7 +38,7 @@ struct AdaptiveSemicircleSoCStyle: GaugeStyle {
                         startAngle: startAngle,
                         endAngle: endAngle
                     ),
-                    style: StrokeStyle(lineWidth: 16, lineCap: .round)
+                    style: StrokeStyle(lineWidth: GaugeMetrics.gaugeStrokeWidth, lineCap: .round)
                 )
                 .shadow(color: .green.opacity(percentage > 0.5 ? 0.15 : 0.0), radius: 8)
             

@@ -105,23 +105,37 @@ struct TemperatureGaugeView: View {
                 ThermometerBody()
                     .stroke(Color.white.opacity(0.70), lineWidth: 2)
 
-                // ── White cursor lines + temperature labels ──
-                ForEach(Array([temp1, temp2].enumerated()), id: \.offset) { _, temp in
-                    let y = yFor(temp)
+                // ── White rectangle spanning temp1 to temp2 ──
+                let topY    = min(yFor(temp1), yFor(temp2))
+                let bottomY = max(yFor(temp1), yFor(temp2))
+                let rectH   = max(bottomY - topY, 4)
+                Rectangle()
+                    .fill(Color.white.opacity(0.70))
+                    .overlay(Rectangle().stroke(Color.white, lineWidth: 2))
+                    .frame(width: stemW + 10, height: rectH)
+                    .position(x: cx, y: topY + rectH / 2)
 
-                    // Horizontal line spanning slightly wider than the stem
-                    Rectangle()
-                        .fill(Color.white)
-                        .frame(width: stemW + 10, height: 2)
-                        .position(x: cx, y: y)
+                // Temperature labels (collision-aware)
+                let rawY1:     CGFloat = yFor(temp1)
+                let rawY2:     CGFloat = yFor(temp2)
+                let labelSepY: CGFloat = 14   // min center-to-center distance (≈ label height)
+                let labelMidY  = (rawY1 + rawY2) / 2
+                let halfSepY   = max(abs(rawY1 - rawY2) / 2, labelSepY / 2)
+                let adjY1 = rawY1 <= rawY2 ? labelMidY - halfSepY : labelMidY + halfSepY
+                let adjY2 = rawY1 <= rawY2 ? labelMidY + halfSepY : labelMidY - halfSepY
+                let labelX = cx + stemW / 2 + 22
 
-                    // Label to the right of the stem
-                    Text(String(format: "%.0f°C", temp))
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .fixedSize()
-                        .position(x: cx + stemW / 2 + 22, y: y)
-                }
+                Text(String(format: "%.0f°C", temp1))
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .fixedSize()
+                    .position(x: labelX, y: adjY1)
+
+                Text(String(format: "%.0f°C", temp2))
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .fixedSize()
+                    .position(x: labelX, y: adjY2)
             }
         }
     }

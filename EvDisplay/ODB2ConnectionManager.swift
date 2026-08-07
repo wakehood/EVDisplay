@@ -39,10 +39,13 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
     var rawCellMax = 0.0
     var rawCellMean = 0.0
     var rawCellStdDev = 0.0
-
+    var rawMcuHighVoltageCutoff = 3.40  //volts
+    var rawMcuLowVoltageThresh  = 2.40 //volts
+    
     var rawCellTemp = 25.0 //temporary
     var rawMcuHighTemp = 25.0
     var rawMcuLowTemp = 20.0
+
 
     var rawPackCapacityKwh = 20.0
     var rawAvailableEnergyKwh: Double { Double(rawSOCPercentage) / 100.0 * rawPackCapacityKwh }
@@ -50,7 +53,7 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
     var rawVcuMotorRPM = 0.0
     var rawVcuHighTemp = 35.0
     var rawVcuLowTemp  = 28.0
-
+ 
     // FIX: Separated single-line comma declarations to satisfy the Observation macro criteria
     var alertHardware = 0
     var alertCCensus = 0
@@ -85,6 +88,8 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
     private let serialServiceUUID = CBUUID(string: "FFF0")
     private let writeCharacteristicUUID = CBUUID(string: "FFF1")
     private let notifyCharacteristicUUID = CBUUID(string: "FFF2")
+    
+    private let mcuVersionCmd: String = "22 DD 80"
 
     override init() {
         isPreviewMock = false
@@ -112,10 +117,12 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
         self.rawPackVoltage = 147.0
         self.rawPackCurrent = 16.8 // ~2.47 kW
 
-        self.rawCellMin = 4.11
-        self.rawCellMax = 4.14
-        self.rawCellMean = 4.125
+        self.rawCellMin = 2.9
+        self.rawCellMax = 3.1
+        self.rawCellMean = 3.0
         self.rawCellStdDev = 0.008
+        self.rawMcuHighVoltageCutoff = 3.40  //volts
+        self.rawMcuLowVoltageThresh  = 2.40 //volts
 
         self.rawCellTemp = 30.0
         self.rawMcuLowTemp = 24.0
