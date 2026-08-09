@@ -139,7 +139,7 @@ struct MCUDashboardCardView: View {
                         CellVoltageRangeGaugeView(
                             cellMin:    manager.rawCellMin,
                             cellMax:    manager.rawCellMax,
-                            lowCutoff:  manager.rawMcuLowVoltageThresh,
+                            lowCutoff:  manager.rawMcuLowVoltageCutoff,
                             highCutoff: manager.rawMcuHighVoltageCutoff
                         )
                         .frame(height: GaugeMetrics.cellGaugeHeight)
@@ -188,6 +188,7 @@ struct MCUDashboardCardView: View {
                         .font(.system(size: 18, weight: .bold, design: .monospaced))
                         .foregroundColor(.secondary)
                 }
+                .padding(.top, 20)
                 .frame(maxWidth: .infinity, alignment: .top)
 
                 Divider()
@@ -228,7 +229,7 @@ struct MCUDashboardCardView: View {
                 CellVoltageRangeGaugeView(
                     cellMin:    manager.rawCellMin,
                     cellMax:    manager.rawCellMax,
-                    lowCutoff:  manager.rawMcuLowVoltageThresh,
+                    lowCutoff:  manager.rawMcuLowVoltageCutoff,
                     highCutoff: manager.rawMcuHighVoltageCutoff
                 )
                 .frame(height: GaugeMetrics.cellGaugeHeight)

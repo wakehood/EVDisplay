@@ -39,22 +39,21 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
     var rawCellMax = 0.0
     var rawCellMean = 0.0
     var rawCellStdDev = 0.0
-    var rawMcuHighVoltageCutoff = 3.40  //volts
-    var rawMcuLowVoltageThresh  = 2.40 //volts
+    var rawMcuHighVoltageCutoff = 0.0  //volts
+    var rawMcuLowVoltageCutoff  = 0.0 //volts
     
-    var rawCellTemp = 25.0 //temporary
-    var rawMcuHighTemp = 25.0
-    var rawMcuLowTemp = 20.0
+    var rawMcuHighTemp = 0.0
+    var rawMcuLowTemp = 0.0
 
 
-    var rawPackCapacityKwh = 20.0
+    var rawPackCapacityKwh = 0.0
+    var rawCurrentKwh = 0.0
     var rawAvailableEnergyKwh: Double { Double(rawSOCPercentage) / 100.0 * rawPackCapacityKwh }
 
     var rawVcuMotorRPM = 0.0
     var rawVcuHighTemp = 35.0
     var rawVcuLowTemp  = 28.0
  
-    // FIX: Separated single-line comma declarations to satisfy the Observation macro criteria
     var alertHardware = 0
     var alertCCensus = 0
     var alertTCensus = 0
@@ -89,7 +88,141 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
     private let writeCharacteristicUUID = CBUUID(string: "FFF1")
     private let notifyCharacteristicUUID = CBUUID(string: "FFF2")
     
-    private let mcuVersionCmd: String = "22 DD 80"
+    //MCU PIDs and commands
+    private let customServiceReq  = "22 "
+    private let customServiceResp = "62 "
+    
+    //MCU Run Time
+    private let mcuRunTimeReq: String   = "01 1F"
+    private let mcuRunTimeResp: String  = "411F"
+    
+    //MCU Version
+    private let mcuVersionPid: String   = "DD 80"
+    var mcuVersionReq: String {
+        get {self.customServiceReq + self.mcuVersionPid}
+    }
+    var mcuVersionResp: String {
+        get {(self.customServiceResp + self.mcuVersionPid).replacingOccurrences(of: " ", with: "")}
+    }
+    
+    //MCU Status/Alerts
+    private let mcuStatusPid: String    = "DD 81"
+    var mcuStatusReq: String {
+        get {self.customServiceReq + self.mcuStatusPid}
+    }
+    var mcuStatusResp: String {
+        get {(self.customServiceResp + self.mcuStatusPid).replacingOccurrences(of: " ", with: "")}
+    }
+    
+    //MCU Pack Voltage
+    private let mcuPackVoltPid: String  = "DD 83"
+    var mcuPackVoltReq: String {
+        get {self.customServiceReq + self.mcuPackVoltPid}
+    }
+    var mcuPackVoltResp: String {
+        get {(self.customServiceResp + self.mcuPackVoltPid).replacingOccurrences(of: " ", with: "")}
+    }
+    
+    //MCU Pack Current
+    private let mcuPackCurPid: String   = "DD 84"
+    var mcuPackCurReq: String {
+        get {self.customServiceReq + self.mcuPackCurPid}
+    }
+    var mcPackCurResp: String {
+        get {(self.customServiceResp + self.mcuPackCurPid).replacingOccurrences(of: " ", with: "")}
+    }
+    
+    //MCU State of Charge
+    private let mcuSocPid: String       = "DD 85"
+    var mcuSocReq: String {
+        get {self.customServiceReq + self.mcuSocPid}
+    }
+    var mcuSocResp: String {
+        get {(self.customServiceResp + self.mcuSocPid).replacingOccurrences(of: " ", with: "")}
+    }
+    
+    
+    //MCU Cell Min Voltage
+    private let mcuCellMinPid: String   = "DD 86"
+    var mcuCellMinReq: String {
+        get {self.customServiceReq + self.mcuCellMinPid}
+    }
+    var mcuCellMinResp: String {
+        get {(self.customServiceResp + self.mcuCellMinPid).replacingOccurrences(of: " ", with: "")}
+    }
+    
+    //MCU Cell Max Voltage
+    private let mcuCellMaxPid: String   = "DD 87"
+    var mcuCellMaxReq: String {
+        get {self.customServiceReq + self.mcuCellMaxPid}
+    }
+    var mcuCellMaxResp: String {
+        get {(self.customServiceResp + self.mcuCellMaxPid).replacingOccurrences(of: " ", with: "")}
+    }
+    
+    //MCU Cell Mean Voltage
+    private let mcuCellAvgPid: String   = "DD 88"
+    var mcuCellAvgReq: String {
+        get {self.customServiceReq + self.mcuCellAvgPid}
+    }
+    var mcuCellAvgResp: String {
+        get {(self.customServiceResp + self.mcuCellAvgPid).replacingOccurrences(of: " ", with: "")}
+    }
+    
+    //MCU Std Deviation Cell Voltages
+    private let mcuStdDevPid: String    = "DD 89"
+    var mcuStdDevReq: String {
+        get {self.customServiceReq + self.mcuStdDevPid}
+    }
+    var mcuStdDevResp: String {
+        get {(self.customServiceResp + self.mcuStdDevPid).replacingOccurrences(of: " ", with: "")}
+    }
+    
+    //MCU High Voltage Cutoff
+    private let mcuHvcPid: String       = "DD 8A"
+    var mcuHvcReq: String {
+        get {self.customServiceReq + self.mcuHvcPid}
+    }
+    var mcuHvcResp: String {
+        get {(self.customServiceResp + self.mcuHvcPid).replacingOccurrences(of: " ", with: "")}
+    }
+    
+    //MCU Low voltage Cutoff
+    private let mcuLvcPid: String       = "DD 8B"
+    var mcuLvcReq: String {
+        get {self.customServiceReq + self.mcuLvcPid}
+    }
+    var mcuLvcResp: String {
+        get {(self.customServiceResp + self.mcuLvcPid).replacingOccurrences(of: " ", with: "")}
+    }
+    
+    //MCU High and Low temperature
+    private let mcuTempPid: String      = "DD 8C"
+    var mcuTempReq: String {
+        get {self.customServiceReq + self.mcuTempPid}
+    }
+    var mcuTempResp: String {
+        get {(self.customServiceResp + self.mcuTempPid).replacingOccurrences(of: " ", with: "")}
+    }
+    
+    //MCU Max capacity in kWh
+    private let mcuMaxKwhPid: String    = "DD 8D"
+    var mcuMaxKwhReq: String {
+        get {self.customServiceReq + self.mcuMaxKwhPid}
+    }
+    var mcuMaxKwhResp: String {
+        get {(self.customServiceResp + self.mcuMaxKwhPid).replacingOccurrences(of: " ", with: "")}
+    }
+    
+    //MCU Current Capacity in kWh
+    private let mcuCurKwhPid: String    = "DD 8E"
+    var mcuCurKwhReq: String {
+        get {self.customServiceReq + self.mcuCurKwhPid}
+    }
+    var mcuCurKwhResp: String {
+        get {(self.customServiceResp + self.mcuCurKwhPid).replacingOccurrences(of: " ", with: "")}
+    }
+    
 
     override init() {
         isPreviewMock = false
@@ -122,14 +255,16 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
         self.rawCellMean = 3.0
         self.rawCellStdDev = 0.008
         self.rawMcuHighVoltageCutoff = 3.40  //volts
-        self.rawMcuLowVoltageThresh  = 2.40 //volts
+        self.rawMcuLowVoltageCutoff  = 2.40 //volts
 
-        self.rawCellTemp = 30.0
         self.rawMcuLowTemp = 24.0
         self.rawMcuHighTemp = 31.0
         self.rawVcuMotorRPM = 3_500.0
         self.rawVcuLowTemp  = 35.0
         self.rawVcuHighTemp = 42.0
+
+        self.rawPackCapacityKwh = 20.0
+        self.rawCurrentKwh = Double(self.rawSOCPercentage) / 100.0 * self.rawPackCapacityKwh
 
         mockTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
@@ -155,6 +290,7 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
                 if self.rawSOCPercentage > 1 && Double.random(in: 0...1) > 0.7 {
                     self.rawSOCPercentage -= 1
                 }
+                self.rawCurrentKwh = Double(self.rawSOCPercentage) / 100.0 * self.rawPackCapacityKwh
             }
         }
     }
@@ -206,19 +342,22 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
         let delay: TimeInterval
         switch currentInitStep {
         case 1:  delay = 1.5
-        case 8:  delay = 0.5
+        case 11: delay = 0.5
         default: delay = 0.4
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             switch self.currentInitStep {
-            case 1: self.sendCommand("AT Z")
-            case 2: self.sendCommand("AT E0")
-            case 3: self.sendCommand("AT H1")
-            case 4: self.sendCommand("AT ST FF")  // maximum bus-search timeout (~1s)
-            case 5: self.sendCommand("AT SP 6")
-            case 6: self.sendCommand("AT SH 7DF")
-            case 7: self.sendCommand("22 DD 80")
-            case 8: self.startAutomaticPolling()
+            case 1:  self.sendCommand("AT Z")
+            case 2:  self.sendCommand("AT E0")
+            case 3:  self.sendCommand("AT H1")
+            case 4:  self.sendCommand("AT ST FF")  // maximum bus-search timeout (~1s)
+            case 5:  self.sendCommand("AT SP 6")
+            case 6:  self.sendCommand("AT SH 7DF")
+            case 7:  self.sendCommand(self.mcuVersionReq)
+            case 8:  self.sendCommand(self.mcuHvcReq)
+            case 9:  self.sendCommand(self.mcuLvcReq)
+            case 10: self.sendCommand(self.mcuMaxKwhReq)
+            case 11: self.startAutomaticPolling()
             default: break
             }
         }
@@ -237,27 +376,31 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
 
             switch self.masterTickCounter {
             case 0:
-                self.sendCommand("22 DD 83")
+                self.sendCommand(self.mcuPackVoltReq)
             case 1:
-                self.sendCommand("22 DD 84")
+                self.sendCommand(self.mcuPackCurReq)
             case 2:
                 let inner = self.cellCycleCounter % 4
                 if inner == 0 || inner == 2 {
-                    self.sendCommand("01 1F")
+                    self.sendCommand(mcuRunTimeReq)
                 } else if inner == 1 {
-                    self.sendCommand("22 DD 85")
+                    self.sendCommand(mcuSocReq)
                 } else if inner == 3 {
-                    self.sendCommand("22 DD 81")
+                    self.sendCommand(self.mcuStatusReq)
                 }
             case 3:
-                let cellQueue = ["22 DD 86", "22 DD 87", "22 DD 88", "22 DD 89"]
+                let cellQueue = [mcuCellMinReq, mcuCellMaxReq, mcuCellAvgReq, mcuStdDevReq]
                 self.sendCommand(cellQueue[self.cellCycleCounter % 4])
                 self.cellCycleCounter = (self.cellCycleCounter + 1) % 100
+            case 4:
+                self.sendCommand(self.mcuTempReq)
+            case 5:
+                self.sendCommand(self.mcuCurKwhReq)
             default:
                 break
             }
 
-            self.masterTickCounter = (self.masterTickCounter + 1) % 4
+            self.masterTickCounter = (self.masterTickCounter + 1) % 6
         }
     }
 
@@ -397,35 +540,35 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
             return (Int(b, radix: 16) ?? 0) * 256 + (Int(a, radix: 16) ?? 0)
         }
 
-        if let v = getVal("411F") {
+        if let v = getVal(mcuRunTimeResp) {
             self.rawRunTimeSeconds = v
             self.mcuRunTime = String(format: "%02d:%02d:%02d", v / 3600, (v % 3600) / 60, v % 60)
         }
 
-        if let v = getVal("62DD80") {
+        if let v = getVal(mcuVersionResp) {
             let ver = v % 256, rev = v / 256
             self.rawVersionData = (version: ver, revision: rev)
             self.mcuVersion = "\(ver).\(rev)"
             if currentInitStep == 7 { advanceHandshake() }
         }
 
-        if let v = getVal("62DD83") {
+        if let v = getVal(mcuPackVoltResp) {
             self.rawPackVoltage = Double(v) * 0.1
             self.mcuPackVoltage = String(format: "%.1f V", self.rawPackVoltage)
         }
 
-        if let v = getVal("62DD84") {
+        if let v = getVal(mcPackCurResp) {
             self.rawPackCurrent = Double(Int(Int16(bitPattern: UInt16(v)))) * 0.1
             self.mcuPackCurrent = String(format: "%.1f A", self.rawPackCurrent)
         }
 
-        if let r = clean.range(of: "62DD85"),
+        if let r = clean.range(of: mcuSocResp),
            let soc = Int(clean[r.upperBound..<clean.index(r.upperBound, offsetBy: 2)], radix: 16) {
             self.rawSOCPercentage = min(soc, 100)
             self.mcuSOC = "\(self.rawSOCPercentage)%"
         }
 
-        if let r = clean.range(of: "62DD81"),
+        if let r = clean.range(of: self.mcuStatusResp),
            let byteAA = Int(String(clean[r.upperBound..<clean.index(r.upperBound, offsetBy: 2)]), radix: 16) {
             self.alertHardware = (byteAA >> 6) & 1
             self.alertCCensus  = (byteAA >> 5) & 1
@@ -436,15 +579,67 @@ class OBD2ConnectionManager: NSObject, CBCentralManagerDelegate, CBPeripheralDel
             self.alertLoTemp   = (byteAA >> 0) & 1
         }
 
-        for did in ["62DD86", "62DD87", "62DD88", "62DD89"] {
+        for did in [mcuCellMinResp, mcuCellMaxResp, mcuCellAvgResp, mcuStdDevResp,] {
             if let v = getVal(did) {
-                let cellValue = Double(Int(Int16(bitPattern: UInt16(v)))) * 0.0001
+                let cellValue = Double(v) * 0.0001
                 let strFormat = String(format: "%.4f V", cellValue)
-                if      did == "62DD86" { self.rawCellMin   = cellValue; self.cellMin    = strFormat }
-                else if did == "62DD87" { self.rawCellMax   = cellValue; self.cellMax    = strFormat }
-                else if did == "62DD88" { self.rawCellMean  = cellValue; self.cellMean   = strFormat }
-                else if did == "62DD89" { self.rawCellStdDev = cellValue; self.cellStdDev = strFormat }
+                if      did == mcuCellMinResp {
+                    self.rawCellMin   = cellValue; self.cellMin    = strFormat
+                    
+//                    let hexstring = String(v, radix: 16, uppercase: true)
+//                    print("pid = \(mcuCellMinResp) v = \(v) rawCellMin = \(rawCellMin) cellMin = \(cellMin) hexstring = \(hexstring)")
+                }
+                else if did == mcuCellMaxResp {
+                    self.rawCellMax   = cellValue; self.cellMax    = strFormat
+                  //  print("pid = \(mcuCellMaxResp) v = \(v) rawCellMax = \(rawCellMax) cellMax = \(cellMax)")
+                }
+                else if did == mcuCellAvgResp {
+                    self.rawCellMean  = cellValue; self.cellMean   = strFormat
+                  //  print("pid = \(mcuCellAvgResp) v = \(v) rawCellMean = \(rawCellMean) cellMean = \(cellMean)")
+                }
+                else if did == mcuStdDevResp {
+                    self.rawCellStdDev = cellValue; self.cellStdDev = strFormat
+                  //  print("pid = \(mcuStdDevResp) v = \(v) rawCellStdDev = \(rawCellStdDev) cellStdDev = \(cellStdDev)")
+                }
             }
+        }
+        for did in [mcuHvcResp, mcuLvcResp] {
+            if let v = getVal(did) {
+                let vcoValue = Double(v) * 0.0001
+            //    let strFormat = String(format: "%.3f V", vcoValue)
+                if did == mcuHvcResp {
+                    self.rawMcuHighVoltageCutoff = vcoValue
+                    if self.currentInitStep == 8 { self.advanceHandshake()
+                    
+
+//                    let hexstring = String(v, radix: 16, uppercase: true)
+//                    print("pid = \(did) v = \(v) rawMcuHighVoltageCutoff = \(rawMcuHighVoltageCutoff) hexstring = \(hexstring)")
+                    }
+                }
+                else if did == mcuLvcResp {
+                    self.rawMcuLowVoltageCutoff = vcoValue
+                    if self.currentInitStep == 9 { self.advanceHandshake()
+                 //   print("pid = \(did) v = \(v) rawMcuLowVoltageCutoff = \(rawMcuLowVoltageCutoff)")
+                    }
+                }
+            }
+        }
+
+        if let r = clean.range(of: mcuTempResp),
+           clean.distance(from: r.upperBound, to: clean.endIndex) >= 4,
+           let byteA = UInt8(String(clean[r.upperBound..<clean.index(r.upperBound, offsetBy: 2)]), radix: 16),
+           let byteB = UInt8(String(clean[clean.index(r.upperBound, offsetBy: 2)..<clean.index(r.upperBound, offsetBy: 4)]), radix: 16) {
+            self.rawMcuHighTemp = Double(Int8(bitPattern: byteA))
+            self.rawMcuLowTemp  = Double(Int8(bitPattern: byteB))
+        }
+
+        if let v = getVal(mcuMaxKwhResp) {
+            self.rawPackCapacityKwh = Double(v) * 0.1
+            if self.currentInitStep == 10 { self.advanceHandshake() }
+        }
+
+        if let v = getVal(mcuCurKwhResp) {
+            self.rawCurrentKwh = Double(v) * 0.1
         }
     }
 }

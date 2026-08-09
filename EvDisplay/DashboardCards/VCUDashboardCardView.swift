@@ -41,6 +41,7 @@ struct VCUDashboardCardView: View {
                         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: manager.rawVcuMotorRPM)
                         .frame(width: gaugeSize, height: gaugeSize)
                         .frame(maxWidth: .infinity)
+                        .padding(.top, 20)
                         .frame(maxHeight: .infinity)
 
                         Divider()
