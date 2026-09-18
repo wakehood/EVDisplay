@@ -5,6 +5,7 @@
 //  Created by Sylvia Wake-Hood on 7/20/26.
 //
 import SwiftUI
+import OBD2Kit
 
 struct EVDashboardCard: View {
     @Environment(OBD2ConnectionManager.self) private var environmentManager: OBD2ConnectionManager?

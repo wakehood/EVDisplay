@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import OBD2Kit
 
 struct MCUDashboardCardView: View {
     @Environment(OBD2ConnectionManager.self) private var manager: OBD2ConnectionManager

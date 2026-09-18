@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import OBD2Kit
 
 struct VCUStatusDashboardCardView: View {
     @Environment(\.dismiss) var dismiss

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import OBD2Kit
 
 struct ChargingDashboardCardView: View {
     @Environment(OBD2ConnectionManager.self) private var environmentManager: OBD2ConnectionManager?

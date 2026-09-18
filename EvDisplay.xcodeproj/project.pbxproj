@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		CB1437EF305CAB4D00A050CD /* OBD2Kit in Frameworks */ = {isa = PBXBuildFile; productRef = CB1437EE305CAB4D00A050CD /* OBD2Kit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		CB34AD503007F73E001E51CE /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -29,9 +33,22 @@
 		CB34AD593007F73E001E51CE /* EvDisplayUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EvDisplayUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		CBB2414B302BE1BE002F25A7 /* Exceptions for "EvDisplay" folder in "EvDisplay" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = CB34AD413007F73C001E51CE /* EvDisplay */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		CB34AD443007F73C001E51CE /* EvDisplay */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				CBB2414B302BE1BE002F25A7 /* Exceptions for "EvDisplay" folder in "EvDisplay" target */,
+			);
 			path = EvDisplay;
 			sourceTree = "<group>";
 		};
@@ -52,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CB1437EF305CAB4D00A050CD /* OBD2Kit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,12 +90,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		CB1437ED305CAB4D00A050CD /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		CB34AD393007F73C001E51CE = {
 			isa = PBXGroup;
 			children = (
 				CB34AD443007F73C001E51CE /* EvDisplay */,
 				CB34AD523007F73E001E51CE /* EvDisplayTests */,
 				CB34AD5C3007F73E001E51CE /* EvDisplayUITests */,
+				CB1437ED305CAB4D00A050CD /* Frameworks */,
 				CB34AD433007F73C001E51CE /* Products */,
 			);
 			sourceTree = "<group>";
@@ -112,6 +138,7 @@
 			);
 			name = EvDisplay;
 			packageProductDependencies = (
+				CB1437EE305CAB4D00A050CD /* OBD2Kit */,
 			);
 			productName = EvDisplay;
 			productReference = CB34AD423007F73C001E51CE /* EvDisplay.app */;
@@ -195,6 +222,9 @@
 			);
 			mainGroup = CB34AD393007F73C001E51CE;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CB1437EA305CAB1B00A050CD /* XCLocalSwiftPackageReference "../OBD2Kit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CB34AD433007F73C001E51CE /* Products */;
 			projectDirPath = "";
@@ -400,13 +430,12 @@
 				DEVELOPMENT_TEAM = 8JF9FYJ59K;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EvDisplay/Info.plist;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This App must use Bluetooth. Please approve.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = NO;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen.storyboard;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -434,13 +463,12 @@
 				DEVELOPMENT_TEAM = 8JF9FYJ59K;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EvDisplay/Info.plist;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This App must use Bluetooth. Please approve.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = NO;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen.storyboard;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -582,6 +610,21 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		CB1437EA305CAB1B00A050CD /* XCLocalSwiftPackageReference "../OBD2Kit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../OBD2Kit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CB1437EE305CAB4D00A050CD /* OBD2Kit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CB1437EA305CAB1B00A050CD /* XCLocalSwiftPackageReference "../OBD2Kit" */;
+			productName = OBD2Kit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CB34AD3A3007F73C001E51CE /* Project object */;
 }

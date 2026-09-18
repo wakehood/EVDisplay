@@ -1,11 +1,12 @@
 import SwiftUI
+import OBD2Kit
 
 struct ContentView: View {
     var body: some View { ProportionalDashboardView() }
 }
 
 struct ProportionalDashboardView: View {
-    @State private var connectionManager = OBD2ConnectionManager(isPreviewMock: true)
+    @State private var connectionManager = OBD2ConnectionManager(isPreviewMock: false)
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
