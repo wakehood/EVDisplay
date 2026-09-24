@@ -5,6 +5,7 @@
 //  Created by Sylvia Wake-Hood on 8/2/26.
 //
 
+#if VCU_ENABLED
 import SwiftUI
 import OBD2Kit
 
@@ -114,3 +115,4 @@ private struct VCUAlertFlagView: View {
         .frame(width: 400, height: 160)
         .padding()
 }
+#endif
