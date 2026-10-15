@@ -27,7 +27,7 @@ struct ProportionalDashboardView: View {
         let sp: CGFloat = 16
         return ScrollView(.vertical, showsIndicators: false) {
             MCUDashboardCardView()
-                .frame(height: 500)
+                .frame(height: max(geometry.size.height * 0.82, 520))
                 .padding([.horizontal, .top], sp)
             #if VCU_ENABLED
             VCUDashboardCardView()
