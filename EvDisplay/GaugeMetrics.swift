@@ -24,11 +24,6 @@ enum GaugeMetrics {
     static let thermometerHeightIPad: CGFloat = 100
 
     // MARK: - SOC semicircle gauge (MCU card)
-    static let socGaugeMaxPhone:    CGFloat = 210
-    static let socGaugeMaxIPad:     CGFloat = 380
-    static let socGaugeMaxPortrait: CGFloat = 170   // tighter height in portrait
-
-    // MARK: - Motor speed semicircle gauge (VCU card)
-    static let motorGaugeMaxPhone: CGFloat = 220
-    static let motorGaugeMaxIPad:  CGFloat = 360
+    static let socGaugeMaxPhone: CGFloat = 210
+    static let socGaugeMaxIPad:  CGFloat = 380
 }
