@@ -29,12 +29,6 @@ struct ProportionalDashboardView: View {
             MCUDashboardCardView()
                 .frame(height: max(geometry.size.height * 0.82, 520))
                 .padding([.horizontal, .top], sp)
-            #if VCU_ENABLED
-            VCUDashboardCardView()
-                .frame(height: 300)
-                .padding(.horizontal, sp)
-                .padding(.top, 8)
-            #endif
             if !connectionManager.isPreviewMock && connectionManager.isConnected {
                 busLog
                     .padding(.horizontal, sp)
@@ -45,28 +39,15 @@ struct ProportionalDashboardView: View {
     }
 
     // MARK: - iPad + iPhone Landscape
-    //
-    // MCU (60%) and VCU (40%) panels sit side by side when VCU_ENABLED.
-    // Without VCU, MCU occupies the full width.
-    // On iPhone landscape the minimum card height kicks in and ScrollView allows scrolling.
     private func landscapeLayout(geometry: GeometryProxy) -> some View {
         let sp: CGFloat = 12
         let cardH = max(geometry.size.height - sp * 2, 280)
-        let totalWidth = geometry.size.width - sp * 3   // left pad + gap + right pad
+        let totalWidth = geometry.size.width - sp * 2
 
         return ScrollView(.vertical, showsIndicators: false) {
-            HStack(alignment: .top, spacing: sp) {
-                #if VCU_ENABLED
-                MCUDashboardCardView()
-                    .frame(width: totalWidth * 0.60, height: cardH)
-                VCUDashboardCardView()
-                    .frame(width: totalWidth * 0.40, height: cardH)
-                #else
-                MCUDashboardCardView()
-                    .frame(width: totalWidth, height: cardH)
-                #endif
-            }
-            .padding(sp)
+            MCUDashboardCardView()
+                .frame(width: totalWidth, height: cardH)
+                .padding(sp)
 
             if !connectionManager.isPreviewMock && connectionManager.isConnected {
                 busLog
