@@ -81,6 +81,12 @@ struct MCUDashboardCardView: View {
                         .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.bottom, 4)
+                    Text(String(format: "%.1f kWh", manager.rawAvailableEnergyKwh))
+                        .font(.system(size: isIPad ? 26 : 18, weight: .bold, design: .monospaced))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.leading, 20)
                         .padding(.bottom, 8)
                     Spacer(minLength: 0)
                     Gauge(value: Double(manager.rawSOCPercentage), in: 0...100) {
@@ -91,11 +97,7 @@ struct MCUDashboardCardView: View {
                     .gaugeStyle(AdaptiveSemicircleSoCStyle(valueFontSize: isIPad ? 64 : 44))
                     .animation(.spring(response: 0.4, dampingFraction: 0.75), value: manager.rawSOCPercentage)
                     .frame(width: gaugeSize, height: gaugeSize)
-
-                    Text(String(format: "%.1f kWh", manager.rawAvailableEnergyKwh))
-                        .font(.system(size: isIPad ? 26 : 18, weight: .bold, design: .monospaced))
-                        .foregroundColor(.secondary)
-                    Spacer(minLength: 0)
+                    Spacer(minLength: 0).frame(maxHeight: 16)
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -103,61 +105,70 @@ struct MCUDashboardCardView: View {
                 Divider()
 
                 // Right half: Power (left) | Temperature (right)
-                HStack(spacing: 0) {
+                VStack(alignment: .leading) {
+                    HStack(spacing: 0) {
+                        
+                        // Power sub-section: bar + kW (top), Pack V / Current (bottom)
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("Power")
+                                .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
+                                .foregroundColor(.secondary)
+                                .padding(.bottom, 8)
+                            
+                            HStack(alignment: .center, spacing: 12) {
+                                PowerBarView(
+                                    normalizedPower: normalizedPower,
+                                    powerColor: powerColor,
+                                    thresholds: scaleThresholds,
+                                    barHeight: barHeight,
+                                    barWidth: isIPad ? 22 : 16
+                                )
+                                Text(String(format: "%.2f kW", abs(powerKW)))
+                                    .font(.system(size: isIPad ? 28 : 20, design: .monospaced))
+                                    .fontWeight(.black)
+                                    .foregroundColor(powerColor)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.75)
+                            }
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity)
+                        
+                        Divider()
+                        
+                        // Temperature sub-section
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("Temp")
+                                .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
+                                .foregroundColor(.secondary)
+                            TemperatureGaugeView(temp1: manager.rawMcuLowTemp, temp2: manager.rawMcuHighTemp)
+                                .frame(width: tempW, height: tempH)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.top, 8)
+                        }
+                        .padding(12)
+                    }
+                    .frame(maxWidth: .infinity)
 
-                    // Power sub-section: bar + kW (top), Pack V / Current (bottom)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("Power")
+                    Divider()
+                        .padding(.vertical, 6)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Pack")
                             .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                             .foregroundColor(.secondary)
-                            .padding(.bottom, 8)
-
-                        HStack(alignment: .center, spacing: 12) {
-                            PowerBarView(
-                                normalizedPower: normalizedPower,
-                                powerColor: powerColor,
-                                thresholds: scaleThresholds,
-                                barHeight: barHeight
-                            )
-                            Text(String(format: "%.2f kW", abs(powerKW)))
-                                .font(.system(size: isIPad ? 28 : 20, design: .monospaced))
-                                .fontWeight(.black)
-                                .foregroundColor(powerColor)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.75)
-                        }
-                        .frame(maxHeight: .infinity)
-
-                        Divider()
-                            .padding(.vertical, 6)
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(String(format: "Pack   %.1fV", manager.rawPackVoltage))
-                            Text(String(format: "Current %.1fA", manager.rawPackCurrent))
+                        HStack(spacing: 12) {
+                            Text(String(format: "%.1fV", manager.rawPackVoltage))
+                            Text(String(format: "%.1fA", manager.rawPackCurrent))
                         }
                         .font(.system(size: isIPad ? 20 : 14, weight: .bold, design: .monospaced))
                         .foregroundColor(.secondary)
-                        .padding(.top, 4)
+                        .padding(.leading, 20)
                     }
-                    .padding(12)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                    Divider()
-
-                    // Temperature sub-section
-                    VStack(alignment: .center, spacing: 8) {
-                        Spacer(minLength: 0)
-                        Text("MCU Temp")
-                            .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
-                            .foregroundColor(.secondary)
-                        TemperatureGaugeView(temp1: manager.rawMcuLowTemp, temp2: manager.rawMcuHighTemp)
-                            .frame(width: tempW, height: tempH)
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, 12)
-                    .frame(maxHeight: .infinity)
+                    .padding(.top, 4)
+                    .padding(.leading, 12)
+                    .padding(.bottom, 12)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -165,34 +176,38 @@ struct MCUDashboardCardView: View {
 
             // ── Bottom row (fixed height) ──
             HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Status")
+                        .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
+                        .foregroundColor(.secondary)
 
                 // Left half: connection status + alert button
-                HStack(alignment: .center, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Status")
-                            .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
-                            .foregroundColor(.secondary)
+                    HStack(alignment: .center, spacing: 16) {
                         Text(manager.connectionStatus)
                             .font(.system(size: isIPad ? 16 : 12, weight: .semibold, design: .rounded))
                             .foregroundColor(
                                 manager.isConnected ? Color("Primary Green") :
-                                manager.connectionStatus == String(localized: "Bluetooth Off") ? .red : .orange
+                                    manager.connectionStatus == String(localized: "Bluetooth Off") ? .red : .orange
                             )
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
+                            .padding(.leading, 20)
+                        
+                        Spacer()
+                        
+                        Button {
+                            showingHealth = true
+                        } label: {
+                            Image(systemName: anyAlert ? "exclamationmark.triangle.fill" : "checkmark.shield.fill")
+                                .font(.system(size: isIPad ? 36 : 24, weight: .semibold))
+                                .foregroundColor(anyAlert ? .red : Color("Primary Green"))
+                        }
+                        .buttonStyle(.plain)
+                        Spacer(minLength: 0)
                     }
-                    Button {
-                        showingHealth = true
-                    } label: {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: isIPad ? 36 : 24, weight: .semibold))
-                            .foregroundColor(anyAlert ? .red : Color("Primary Green"))
-                    }
-                    .buttonStyle(.plain)
-                    Spacer(minLength: 0)
                 }
-                .padding(.horizontal, 16)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.horizontal, 20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
                 Divider()
 
@@ -208,9 +223,10 @@ struct MCUDashboardCardView: View {
                         highCutoff: manager.rawMcuHighVoltageCutoff
                     )
                     .frame(height: GaugeMetrics.cellGaugeHeight)
+                    .padding(.horizontal, 20)
                 }
-                .padding(.horizontal, 16)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
             .frame(height: bottomH)
         }
@@ -225,13 +241,25 @@ struct MCUDashboardCardView: View {
         powerColor: Color,
         normalizedPower: Double
     ) -> some View {
-        // Scale the gauge to fill available height; width limits keep it from overflowing on wider devices
-        let gaugeSize = min(geo.size.height * 0.48, geo.size.width * 0.85)
+        // barHeight drives Power/Temp row height; gaugeSize fills whatever Energy space remains
+        let barHeight: CGFloat = min(geo.size.height * 0.15, 110.0)
+        // 323 = sum of all fixed section heights (Power row label, Pack, Cells, Status,
+        //       dividers, outer VStack spacings) + Energy label+kWh heights & gaps
+        let gaugeSize = max(60, min(geo.size.height - barHeight - 323, geo.size.width * 0.80))
 
         VStack(spacing: 10) {
 
             // ── SOC gauge (prominent, centered) ──
             VStack(spacing: 6) {
+                Text("Energy")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(String(format: "%.1f kWh", manager.rawAvailableEnergyKwh))
+                    .font(.system(size: 20, weight: .bold, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 10)
                 Gauge(value: Double(manager.rawSOCPercentage), in: 0...100) {
                     Text("Charge")
                 } currentValueLabel: {
@@ -240,61 +268,79 @@ struct MCUDashboardCardView: View {
                 .gaugeStyle(AdaptiveSemicircleSoCStyle())
                 .animation(.spring(response: 0.4, dampingFraction: 0.75), value: manager.rawSOCPercentage)
                 .frame(width: gaugeSize, height: gaugeSize)
-
-                Text(String(format: "%.1f kWh", manager.rawAvailableEnergyKwh))
-                    .font(.system(size: 20, weight: .bold, design: .monospaced))
-                    .foregroundColor(.secondary)
             }
             .frame(maxWidth: .infinity)
             .frame(maxHeight: .infinity)
+            .padding(.horizontal, 12)
 
             Divider()
 
-            // ── Power row: bar + metrics + temperature ──
-            HStack(alignment: .center, spacing: 12) {
-                Text("Power")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundColor(.secondary)
+            // ── Power | Temp  (top)  /  Pack  (bottom) ──
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top, spacing: 0) {
 
-                PowerBarView(
-                    normalizedPower: normalizedPower,
-                    powerColor: powerColor,
-                    thresholds: scaleThresholds,
-                    barHeight: 80
-                )
-
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(String(format: "%.2f kW", abs(powerKW)))
-                        .font(.system(.subheadline, design: .monospaced))
-                        .fontWeight(.black)
-                        .foregroundColor(powerColor)
+                    // Power column
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Power")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundColor(.secondary)
+                        HStack(alignment: .center, spacing: 8) {
+                            PowerBarView(
+                                normalizedPower: normalizedPower,
+                                powerColor: powerColor,
+                                thresholds: [0, 10, 100, 500],
+                                barHeight: barHeight,
+                                barWidth: 14
+                            )
+                            Text(String(format: "%.2f kW", abs(powerKW)))
+                                .font(.system(.subheadline, design: .monospaced))
+                                .fontWeight(.black)
+                                .foregroundColor(powerColor)
+                        }
+                    }
+                    .padding(.horizontal, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                     Divider()
 
-                    Text(String(format: "Pack   %.1fV", manager.rawPackVoltage))
-                    Text(String(format: "Current %.1fA", manager.rawPackCurrent))
+                    // Temp column
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Temp")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundColor(.secondary)
+                        TemperatureGaugeView(temp1: manager.rawMcuLowTemp, temp2: manager.rawMcuHighTemp)
+                            .frame(width: 46, height: barHeight)
+                    }
+                    .padding(.horizontal, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .foregroundColor(.secondary)
 
-                Spacer()
+                Divider()
+                    .padding(.vertical, 6)
 
-                VStack(spacing: 4) {
-                    Text("Temp")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                // Pack row
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Pack")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
                         .foregroundColor(.secondary)
-                    TemperatureGaugeView(temp1: manager.rawMcuLowTemp, temp2: manager.rawMcuHighTemp)
-                        .frame(width: 46, height: 80)
+                    HStack(spacing: 12) {
+                        Text(String(format: "%.1fV", manager.rawPackVoltage))
+                        Text(String(format: "%.1fA", manager.rawPackCurrent))
+                    }
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .padding(.leading, 8)
                 }
+                .padding(.bottom, 8)
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 12)
 
             Divider()
 
             // ── Cell voltage range ──
             VStack(alignment: .leading, spacing: 6) {
                 Text("Cells")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundColor(.secondary)
                 CellVoltageRangeGaugeView(
                     cellMin:    manager.rawCellMin,
@@ -304,62 +350,38 @@ struct MCUDashboardCardView: View {
                 )
                 .frame(height: GaugeMetrics.cellGaugeHeight)
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 12)
 
             Divider()
 
-            // ── Compact status bar (temp shown in power row above) ──
-            HStack(alignment: .center, spacing: 12) {
-                ConnectionStatusRow(
-                    status: manager.connectionStatus,
-                    isConnected: manager.isConnected
-                )
+            // ── Status ──
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Status")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(.secondary)
+                    Text(manager.connectionStatus)
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundColor(
+                            manager.isConnected ? Color("Primary Green") :
+                            manager.connectionStatus == String(localized: "Bluetooth Off") ? .red : .orange
+                        )
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
                 Spacer()
                 Button {
                     showingHealth = true
                 } label: {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 36, weight: .semibold))
+                    Image(systemName: anyAlert ? "exclamationmark.triangle.fill" : "checkmark.shield.fill")
+                        .font(.system(size: isIPad ? 36 : 24, weight: .semibold))
                         .foregroundColor(anyAlert ? .red : Color("Primary Green"))
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 12)
             .padding(.vertical, 6)
         }
-    }
-
-    // MARK: - Status bar
-    private var mcuStatusBar: some View {
-        HStack(alignment: .center, spacing: 0) {
-            ConnectionStatusRow(
-                status: manager.connectionStatus,
-                isConnected: manager.isConnected
-            )
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            VStack(spacing: 4) {
-                Text("MCU Temp")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .foregroundColor(.secondary)
-                TemperatureGaugeView(temp1: manager.rawMcuLowTemp, temp2: manager.rawMcuHighTemp)
-                    .frame(width: isIPad ? GaugeMetrics.thermometerWidthIPad  : GaugeMetrics.thermometerWidth,
-                           height: isIPad ? GaugeMetrics.thermometerHeightIPad : GaugeMetrics.thermometerHeight)
-            }
-            .frame(maxWidth: .infinity, alignment: .center)
-
-            Button {
-                showingHealth = true
-            } label: {
-                Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 36, weight: .semibold))
-                    .foregroundColor(anyAlert ? .red : Color("Primary Green"))
-            }
-            .buttonStyle(.plain)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
     }
 
     private func calculateLogProgress(for value: Double) -> Double {
@@ -386,6 +408,7 @@ private struct PowerBarView: View {
     let powerColor: Color
     let thresholds: [Double]
     let barHeight: CGFloat
+    var barWidth: CGFloat = 26
 
     var body: some View {
         HStack(spacing: 5) {
@@ -393,16 +416,16 @@ private struct PowerBarView: View {
                 ZStack(alignment: .bottom) {
                     Capsule()
                         .fill(Color.primary.opacity(0.06))
-                        .frame(width: 26)
+                        .frame(width: barWidth)
                     Capsule()
                         .fill(powerColor)
-                        .frame(width: 26, height: geo.size.height * normalizedPower)
+                        .frame(width: barWidth, height: geo.size.height * normalizedPower)
                         .shadow(color: powerColor.opacity(0.15), radius: 4)
                         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: normalizedPower)
                 }
-                .frame(maxWidth: 26)
+                .frame(maxWidth: barWidth)
             }
-            .frame(width: 26, height: barHeight)
+            .frame(width: barWidth, height: barHeight)
 
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(thresholds.reversed(), id: \.self) { threshold in
@@ -416,30 +439,6 @@ private struct PowerBarView: View {
                 }
             }
             .frame(height: barHeight)
-        }
-    }
-}
-
-private struct ConnectionStatusRow: View {
-    let status: String
-    let isConnected: Bool
-
-    private var statusColor: Color {
-        if isConnected { return Color("Primary Green") }
-        if status == String(localized: "Bluetooth Off") { return .red }
-        return .orange
-    }
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text("Status")
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .foregroundColor(.secondary)
-            Text(status)
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundColor(statusColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
         }
     }
 }
