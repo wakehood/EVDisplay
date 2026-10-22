@@ -73,7 +73,7 @@ struct MCUDashboardCardView: View {
         VStack(spacing: 0) {
 
             // ── Top row ──
-            HStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 0) {
 
                 // Left half: SOC gauge + available energy
                 VStack(spacing: 0) {
@@ -106,7 +106,7 @@ struct MCUDashboardCardView: View {
 
                 // Right half: Power (left) | Temperature (right)
                 VStack(alignment: .leading) {
-                    HStack(spacing: 0) {
+                    HStack(alignment: .top, spacing: 0) {
                         
                         // Power sub-section: bar + kW (top), Pack V / Current (bottom)
                         VStack(alignment: .leading, spacing: 0) {
@@ -194,15 +194,27 @@ struct MCUDashboardCardView: View {
                             .padding(.leading, 20)
                         
                         Spacer()
-                        
-                        Button {
-                            showingHealth = true
-                        } label: {
-                            Image(systemName: anyAlert ? "exclamationmark.triangle.fill" : "checkmark.shield.fill")
-                                .font(.system(size: isIPad ? 36 : 24, weight: .semibold))
-                                .foregroundColor(anyAlert ? .red : Color("Primary Green"))
+
+                        if manager.hasReceivedStatus {
+                            Button {
+                                showingHealth = true
+                            } label: {
+                                Image(systemName: anyAlert ? "exclamationmark.triangle.fill" : "checkmark.shield.fill")
+                                    .font(.system(size: isIPad ? 36 : 24, weight: .semibold))
+                                    .foregroundColor(anyAlert ? .red : Color("Primary Green"))
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
+                        if manager.scanTimedOut {
+                            Button {
+                                manager.retryScanning()
+                            } label: {
+                                Text("Retry")
+                                    .font(.system(size: isIPad ? 16 : 12, weight: .semibold, design: .rounded))
+                                    .foregroundColor(.orange)
+                            }
+                            .buttonStyle(.plain)
+                        }
                         Spacer(minLength: 0)
                     }
                 }
@@ -242,32 +254,33 @@ struct MCUDashboardCardView: View {
         normalizedPower: Double
     ) -> some View {
         // barHeight drives Power/Temp row height; gaugeSize fills whatever Energy space remains
-        let barHeight: CGFloat = min(geo.size.height * 0.15, 110.0)
-        // 323 = sum of all fixed section heights (Power row label, Pack, Cells, Status,
-        //       dividers, outer VStack spacings) + Energy label+kWh heights & gaps
-        let gaugeSize = max(60, min(geo.size.height - barHeight - 323, geo.size.width * 0.80))
+        let barHeight: CGFloat = min(geo.size.height * 0.15, isIPad ? 160.0 : 110.0)
+        let maxGauge: CGFloat = isIPad ? GaugeMetrics.socGaugeMaxIPad : GaugeMetrics.socGaugeMaxPhone
+        let gaugeSize = max(60, min(geo.size.width * 0.80, maxGauge))
 
         VStack(spacing: 10) {
 
             // ── SOC gauge (prominent, centered) ──
             VStack(spacing: 6) {
                 Text("Energy")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(String(format: "%.1f kWh", manager.rawAvailableEnergyKwh))
-                    .font(.system(size: 20, weight: .bold, design: .monospaced))
+                    .font(.system(size: isIPad ? 26 : 20, weight: .bold, design: .monospaced))
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.leading, 10)
+                if isIPad { Spacer(minLength: 0) }
                 Gauge(value: Double(manager.rawSOCPercentage), in: 0...100) {
                     Text("Charge")
                 } currentValueLabel: {
                     Text("\(manager.rawSOCPercentage)%")
                 }
-                .gaugeStyle(AdaptiveSemicircleSoCStyle())
+                .gaugeStyle(AdaptiveSemicircleSoCStyle(valueFontSize: isIPad ? 64 : 44))
                 .animation(.spring(response: 0.4, dampingFraction: 0.75), value: manager.rawSOCPercentage)
                 .frame(width: gaugeSize, height: gaugeSize)
+                if isIPad { Spacer(minLength: 0) }
             }
             .frame(maxWidth: .infinity)
             .frame(maxHeight: .infinity)
@@ -282,7 +295,7 @@ struct MCUDashboardCardView: View {
                     // Power column
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Power")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                             .foregroundColor(.secondary)
                         HStack(alignment: .center, spacing: 8) {
                             PowerBarView(
@@ -306,7 +319,7 @@ struct MCUDashboardCardView: View {
                     // Temp column
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Temp")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                             .foregroundColor(.secondary)
                         TemperatureGaugeView(temp1: manager.rawMcuLowTemp, temp2: manager.rawMcuHighTemp)
                             .frame(width: 46, height: barHeight)
@@ -321,7 +334,7 @@ struct MCUDashboardCardView: View {
                 // Pack row
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Pack")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                         .foregroundColor(.secondary)
                     HStack(spacing: 12) {
                         Text(String(format: "%.1fV", manager.rawPackVoltage))
@@ -340,7 +353,7 @@ struct MCUDashboardCardView: View {
             // ── Cell voltage range ──
             VStack(alignment: .leading, spacing: 6) {
                 Text("Cells")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                     .foregroundColor(.secondary)
                 CellVoltageRangeGaugeView(
                     cellMin:    manager.rawCellMin,
@@ -358,7 +371,7 @@ struct MCUDashboardCardView: View {
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Status")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                         .foregroundColor(.secondary)
                     Text(manager.connectionStatus)
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
@@ -370,14 +383,27 @@ struct MCUDashboardCardView: View {
                         .minimumScaleFactor(0.7)
                 }
                 Spacer()
-                Button {
-                    showingHealth = true
-                } label: {
-                    Image(systemName: anyAlert ? "exclamationmark.triangle.fill" : "checkmark.shield.fill")
-                        .font(.system(size: isIPad ? 36 : 24, weight: .semibold))
-                        .foregroundColor(anyAlert ? .red : Color("Primary Green"))
+                if manager.hasReceivedStatus {
+                    Button {
+                        showingHealth = true
+                    } label: {
+                        Image(systemName: anyAlert ? "exclamationmark.triangle.fill" : "checkmark.shield.fill")
+                            .font(.system(size: isIPad ? 36 : 24, weight: .semibold))
+                            .foregroundColor(anyAlert ? .red : Color("Primary Green"))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+                if manager.scanTimedOut {
+                    Button {
+                        manager.retryScanning()
+                    } label: {
+                        Text("Retry")
+                            .font(.system(size: isIPad ? 16 : 12, weight: .semibold, design: .rounded))
+                            .foregroundColor(.orange)
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer()               
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
