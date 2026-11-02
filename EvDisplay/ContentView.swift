@@ -29,11 +29,13 @@ struct ProportionalDashboardView: View {
             MCUDashboardCardView()
                 .frame(height: max(geometry.size.height * 0.82, 520))
                 .padding([.horizontal, .top], sp)
+            #if DEBUG
             if !connectionManager.isPreviewMock && connectionManager.isConnected {
                 busLog
                     .padding(.horizontal, sp)
                     .padding(.top, 8)
             }
+            #endif
         }
         .background(Color("Shadow Background"))
     }
@@ -49,10 +51,12 @@ struct ProportionalDashboardView: View {
                 .frame(width: totalWidth, height: cardH)
                 .padding(sp)
 
+            #if DEBUG
             if !connectionManager.isPreviewMock && connectionManager.isConnected {
                 busLog
                     .padding(.horizontal, sp)
             }
+            #endif
         }
         .background(Color("Shadow Background"))
     }

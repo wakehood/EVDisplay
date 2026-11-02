@@ -16,6 +16,8 @@ enum GaugeMetrics {
     static let gaugeStrokeWidth: CGFloat = 16
     /// Exact height needed for CellVoltageRangeGaugeView (label 12 + gap 4 + bar + gap 4 + cutoff 11).
     static let cellGaugeHeight: CGFloat = 12 + 4 + gaugeStrokeWidth + 4 + 11
+    /// iPad variant — larger fonts need more vertical room (label 16 + gap 6 + bar + gap 6 + cutoff 14).
+    static let cellGaugeHeightIPad: CGFloat = 16 + 6 + gaugeStrokeWidth + 6 + 14
 
     // MARK: - Accent / side gauges (thermometer, cell voltage bar)
     static let thermometerWidth:      CGFloat = 52
@@ -25,5 +27,5 @@ enum GaugeMetrics {
 
     // MARK: - SOC semicircle gauge (MCU card)
     static let socGaugeMaxPhone: CGFloat = 210
-    static let socGaugeMaxIPad:  CGFloat = 380
+    static let socGaugeMaxIPad:  CGFloat = 460
 }

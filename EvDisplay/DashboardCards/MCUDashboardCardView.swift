@@ -11,9 +11,28 @@ import OBD2Kit
 struct MCUDashboardCardView: View {
     @Environment(OBD2ConnectionManager.self) private var manager: OBD2ConnectionManager
     @Environment(\.horizontalSizeClass) private var hSizeClass
+    @Environment(\.verticalSizeClass) private var vSizeClass
     @State private var showingHealth = false
+    @State private var showingFirmwareAlert = false
+    @State private var showingInfo = false
+    @State private var longPressJustFired = false
 
-    private var isIPad: Bool { hSizeClass == .regular }
+    // iPad has regular in both axes; iPhone Pro Max landscape is regular/compact
+    private var isIPad: Bool { hSizeClass == .regular && vSizeClass == .regular }
+
+    private var infoButton: some View {
+        Image(systemName: "info.circle")
+            .font(.system(size: isIPad ? 20 : 16))
+            .foregroundColor(.secondary)
+            .onTapGesture {
+                guard !longPressJustFired else { longPressJustFired = false; return }
+                showingInfo = true
+            }
+            .onLongPressGesture(minimumDuration: 3.0) {
+                longPressJustFired = true
+                manager.activateDemoMode()
+            }
+    }
 
     private let scaleThresholds: [Double] = [0, 2, 5, 10, 20, 50, 100, 200, 500]
 
@@ -47,6 +66,20 @@ struct MCUDashboardCardView: View {
                 .environment(manager)
                 .presentationDetents([.medium, .large])
         }
+        .sheet(isPresented: $showingInfo) {
+            AppInfoSheet(manager: manager)
+                .presentationDetents([.medium])
+        }
+        .alert("Firmware Update Recommended", isPresented: $showingFirmwareAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("MCU firmware \(manager.mcuVersion) is below the recommended version \(MCUConstants.minimumFirmwareString). The app will work but some fields, such as available energy, may not display. Please update the MCU firmware for the best experience.")
+        }
+        .onChange(of: manager.hasReceivedStatus) { _, received in
+            if received && manager.firmwareTooOld {
+                showingFirmwareAlert = true
+            }
+        }
     }
 
     // MARK: - Landscape
@@ -62,7 +95,7 @@ struct MCUDashboardCardView: View {
         powerColor: Color,
         normalizedPower: Double
     ) -> some View {
-        let bottomH:  CGFloat = isIPad ? 110 : 70
+        let bottomH:  CGFloat = isIPad ? 130 : 80
         let topH      = geo.size.height - bottomH
         let gaugeSize = min(geo.size.width * 0.42, topH * 0.80,
                             isIPad ? GaugeMetrics.socGaugeMaxIPad : GaugeMetrics.socGaugeMaxPhone)
@@ -97,7 +130,7 @@ struct MCUDashboardCardView: View {
                     .gaugeStyle(AdaptiveSemicircleSoCStyle(valueFontSize: isIPad ? 64 : 44))
                     .animation(.spring(response: 0.4, dampingFraction: 0.75), value: manager.rawSOCPercentage)
                     .frame(width: gaugeSize, height: gaugeSize)
-                    Spacer(minLength: 0).frame(maxHeight: 16)
+                    Spacer(minLength: 0)
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -105,7 +138,7 @@ struct MCUDashboardCardView: View {
                 Divider()
 
                 // Right half: Power (left) | Temperature (right)
-                VStack(alignment: .leading) {
+                VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .top, spacing: 0) {
                         
                         // Power sub-section: bar + kW (top), Pack V / Current (bottom)
@@ -114,7 +147,7 @@ struct MCUDashboardCardView: View {
                                 .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                                 .foregroundColor(.secondary)
                                 .padding(.bottom, 8)
-                            
+                            Spacer(minLength: 0)
                             HStack(alignment: .center, spacing: 12) {
                                 PowerBarView(
                                     normalizedPower: normalizedPower,
@@ -130,25 +163,29 @@ struct MCUDashboardCardView: View {
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.75)
                             }
+                             Spacer(minLength: 0)
                         }
                         .padding(12)
-                        .frame(maxWidth: .infinity)
-                        
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
                         Divider()
-                        
+
                         // Temperature sub-section
                         VStack(alignment: .leading, spacing: 0) {
                             Text("Temp")
                                 .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                                 .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                            Spacer(minLength: 0)
                             TemperatureGaugeView(temp1: manager.rawMcuLowTemp, temp2: manager.rawMcuHighTemp)
                                 .frame(width: tempW, height: tempH)
                                 .frame(maxWidth: .infinity, alignment: .center)
-                                .padding(.top, 8)
+                            Spacer(minLength: 0)
                         }
                         .padding(12)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     Divider()
                         .padding(.vertical, 6)
@@ -157,18 +194,24 @@ struct MCUDashboardCardView: View {
                         Text("Pack")
                             .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                             .foregroundColor(.secondary)
+                      
                         HStack(spacing: 12) {
                             Text(String(format: "%.1fV", manager.rawPackVoltage))
                             Text(String(format: "%.1fA", manager.rawPackCurrent))
                         }
-                        .font(.system(size: isIPad ? 20 : 14, weight: .bold, design: .monospaced))
+                        .font(.system(size: isIPad ? 28 : 14, weight: .bold, design: .monospaced))
                         .foregroundColor(.secondary)
                         .padding(.leading, 20)
+                        .padding(.top, 4)
+                        .padding(.bottom, isIPad ? 30 : 20)
+                     
+                        
                     }
                     .padding(.top, 4)
                     .padding(.leading, 12)
                     .padding(.bottom, 12)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -180,7 +223,7 @@ struct MCUDashboardCardView: View {
                     Text("Status")
                         .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                         .foregroundColor(.secondary)
-
+                    Spacer(minLength: 0)
                 // Left half: connection status + alert button
                     HStack(alignment: .center, spacing: 16) {
                         Text(manager.connectionStatus)
@@ -215,8 +258,9 @@ struct MCUDashboardCardView: View {
                             }
                             .buttonStyle(.plain)
                         }
-                        Spacer(minLength: 0)
+                        infoButton
                     }
+                    Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 20)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -228,14 +272,16 @@ struct MCUDashboardCardView: View {
                     Text("Cells")
                         .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                         .foregroundColor(.secondary)
+                    Spacer(minLength: 0)
                     CellVoltageRangeGaugeView(
                         cellMin:    manager.rawCellMin,
                         cellMax:    manager.rawCellMax,
                         lowCutoff:  manager.rawMcuLowVoltageCutoff,
                         highCutoff: manager.rawMcuHighVoltageCutoff
                     )
-                    .frame(height: GaugeMetrics.cellGaugeHeight)
+                    .frame(height: isIPad ? GaugeMetrics.cellGaugeHeightIPad : GaugeMetrics.cellGaugeHeight)
                     .padding(.horizontal, 20)
+                    Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -254,9 +300,11 @@ struct MCUDashboardCardView: View {
         normalizedPower: Double
     ) -> some View {
         // barHeight drives Power/Temp row height; gaugeSize fills whatever Energy space remains
-        let barHeight: CGFloat = min(geo.size.height * 0.15, isIPad ? 160.0 : 110.0)
+        let barHeight: CGFloat = min(geo.size.height * 0.15, isIPad ? 200.0 : 110.0)
+        let tempW: CGFloat = isIPad ? 72.0 : 46.0
         let maxGauge: CGFloat = isIPad ? GaugeMetrics.socGaugeMaxIPad : GaugeMetrics.socGaugeMaxPhone
-        let gaugeSize = max(60, min(geo.size.width * 0.80, maxGauge))
+        // Cap by available height so fixed sections (Power, Cells, Status) stay visible on small screens.
+        let gaugeSize = max(60, min(geo.size.width * 0.80, maxGauge, geo.size.height - 390))
 
         VStack(spacing: 10) {
 
@@ -297,22 +345,25 @@ struct MCUDashboardCardView: View {
                         Text("Power")
                             .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                             .foregroundColor(.secondary)
+                        Spacer(minLength: 0)
                         HStack(alignment: .center, spacing: 8) {
                             PowerBarView(
                                 normalizedPower: normalizedPower,
                                 powerColor: powerColor,
                                 thresholds: [0, 10, 100, 500],
                                 barHeight: barHeight,
-                                barWidth: 14
+                                barWidth: isIPad ? 20 : 14
                             )
                             Text(String(format: "%.2f kW", abs(powerKW)))
                                 .font(.system(.subheadline, design: .monospaced))
                                 .fontWeight(.black)
                                 .foregroundColor(powerColor)
                         }
+                        .frame(maxWidth: .infinity, alignment: isIPad ? .center : .leading)
+                        Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     Divider()
 
@@ -321,12 +372,16 @@ struct MCUDashboardCardView: View {
                         Text("Temp")
                             .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
                             .foregroundColor(.secondary)
+                        Spacer(minLength: 0)
                         TemperatureGaugeView(temp1: manager.rawMcuLowTemp, temp2: manager.rawMcuHighTemp)
-                            .frame(width: 46, height: barHeight)
+                            .frame(width: tempW, height: barHeight)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+                .frame(height: isIPad ? max(geo.size.height * 0.25, barHeight + 80) : nil)
 
                 Divider()
                     .padding(.vertical, 6)
@@ -361,18 +416,18 @@ struct MCUDashboardCardView: View {
                     lowCutoff:  manager.rawMcuLowVoltageCutoff,
                     highCutoff: manager.rawMcuHighVoltageCutoff
                 )
-                .frame(height: GaugeMetrics.cellGaugeHeight)
+                .frame(height: isIPad ? GaugeMetrics.cellGaugeHeightIPad : GaugeMetrics.cellGaugeHeight)
             }
             .padding(.horizontal, 12)
 
             Divider()
 
             // ── Status ──
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Status")
-                        .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
-                        .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Status")
+                    .font(.system(size: isIPad ? 16 : 12, weight: .bold, design: .rounded))
+                    .foregroundColor(.secondary)
+                HStack(alignment: .center, spacing: 16) {
                     Text(manager.connectionStatus)
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundColor(
@@ -381,29 +436,30 @@ struct MCUDashboardCardView: View {
                         )
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
-                }
-                Spacer()
-                if manager.hasReceivedStatus {
-                    Button {
-                        showingHealth = true
-                    } label: {
-                        Image(systemName: anyAlert ? "exclamationmark.triangle.fill" : "checkmark.shield.fill")
-                            .font(.system(size: isIPad ? 36 : 24, weight: .semibold))
-                            .foregroundColor(anyAlert ? .red : Color("Primary Green"))
+                        .padding(.leading, 8)
+                    Spacer()
+                    if manager.hasReceivedStatus {
+                        Button {
+                            showingHealth = true
+                        } label: {
+                            Image(systemName: anyAlert ? "exclamationmark.triangle.fill" : "checkmark.shield.fill")
+                                .font(.system(size: isIPad ? 36 : 24, weight: .semibold))
+                                .foregroundColor(anyAlert ? .red : Color("Primary Green"))
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
-                }
-                if manager.scanTimedOut {
-                    Button {
-                        manager.retryScanning()
-                    } label: {
-                        Text("Retry")
-                            .font(.system(size: isIPad ? 16 : 12, weight: .semibold, design: .rounded))
-                            .foregroundColor(.orange)
+                    if manager.scanTimedOut {
+                        Button {
+                            manager.retryScanning()
+                        } label: {
+                            Text("Retry")
+                                .font(.system(size: isIPad ? 16 : 12, weight: .semibold, design: .rounded))
+                                .foregroundColor(.orange)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                    infoButton
                 }
-                Spacer()               
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
@@ -469,6 +525,63 @@ private struct PowerBarView: View {
     }
 }
 
+// MARK: - App Info Sheet
+
+private struct AppInfoSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let manager: OBD2ConnectionManager
+
+    private var appVersion: String {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+        let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
+        return "\(v) (Build \(b))"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("EvDisplay")
+                .font(.title2.bold())
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 8)
+
+            Divider()
+
+            Group {
+                infoRow(label: "App Version", value: appVersion)
+                infoRow(label: "MCU Firmware", value: manager.mcuVersion == "--.--" ? "—" : manager.mcuVersion)
+                infoRow(label: "Recommended Minimum", value: MCUConstants.minimumFirmwareString)
+            }
+
+            if manager.isDemoModeActive {
+                Divider()
+                Button {
+                    manager.deactivateDemoMode()
+                    dismiss()
+                } label: {
+                    Text("Exit Demo Mode")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .tint(.orange)
+            }
+
+            Spacer()
+        }
+        .padding()
+        .preferredColorScheme(.dark)
+    }
+
+    private func infoRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(value)
+                .font(.system(.body, design: .monospaced))
+        }
+    }
+}
+
 // MARK: - Previews
 
 #Preview("Landscape – iPad") {
@@ -479,10 +592,40 @@ private struct PowerBarView: View {
         .background(Color("Shadow Background"))
 }
 
+#Preview("Portrait – iPad") {
+    MCUDashboardCardView()
+        .environment(OBD2ConnectionManager(isPreviewMock: true))
+        .environment(\.horizontalSizeClass, .regular)
+        .environment(\.verticalSizeClass, .regular)
+        .frame(width: 800, height: 1100)
+        .padding()
+        .background(Color("Shadow Background"))
+}
+
 #Preview("Portrait – iPhone") {
     MCUDashboardCardView()
         .environment(OBD2ConnectionManager(isPreviewMock: true))
         .frame(width: 390, height: 660)
+        .padding()
+        .background(Color("Shadow Background"))
+}
+
+#Preview("Portrait – iPhone SE") {
+    MCUDashboardCardView()
+        .environment(OBD2ConnectionManager(isPreviewMock: true))
+        .environment(\.horizontalSizeClass, .compact)
+        .environment(\.verticalSizeClass, .regular)
+        .frame(width: 343, height: 531)
+        .padding()
+        .background(Color("Shadow Background"))
+}
+
+#Preview("Landscape – iPhone SE") {
+    MCUDashboardCardView()
+        .environment(OBD2ConnectionManager(isPreviewMock: true))
+        .environment(\.horizontalSizeClass, .compact)
+        .environment(\.verticalSizeClass, .compact)
+        .frame(width: 643, height: 351)
         .padding()
         .background(Color("Shadow Background"))
 }

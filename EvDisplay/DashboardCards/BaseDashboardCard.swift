@@ -40,13 +40,9 @@ struct BaseDashboardCard<Content: View>: View {
                         .padding([.top, .leading])
                 }
 
-                Spacer(minLength: 0)
-
                 // Injects the card's specific UI
                 content
-                    .frame(maxWidth: .infinity)
-
-                Spacer(minLength: 0)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .clipped()
